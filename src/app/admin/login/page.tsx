@@ -26,13 +26,20 @@ async function loginAction(formData: FormData) {
   });
 
   if (authError || !authData?.user) {
-    const errorMsg = authError?.message || 'Email atau password salah';
+    const rawMsg = authError?.message || 'Email atau password salah';
+    let errorMsg = rawMsg;
+    if (rawMsg.toLowerCase().includes('invalid login credentials')) {
+      errorMsg = 'Email atau password salah. Pastikan akun sudah dibuat di Supabase Auth (Authentication > Users).';
+    } else if (rawMsg.toLowerCase().includes('email not confirmed')) {
+      errorMsg = 'Email belum dikonfirmasi di Supabase. Aktifkan opsi "Auto Confirm User" di Supabase Auth.';
+    }
     redirect(
       `/admin/login?doorpass=${encodeURIComponent(secretDoorpass)}&error=${encodeURIComponent(errorMsg)}`
     );
   }
 
   // Verifikasi atau pastikan role admin dari tabel 'profiles'
+  let roleAccessDenied = false;
   try {
     const { data: profile } = await supabase
       .from('profiles')
@@ -42,22 +49,33 @@ async function loginAction(formData: FormData) {
 
     if (!profile) {
       // Jika akun baru belum ada di profiles, otomatis daftarkan sebagai admin
-      await supabase.from('profiles').insert({
-        id: authData.user.id,
-        email: authData.user.email || email,
-        role: 'admin',
-      });
-    } else if (profile.role && profile.role !== 'admin') {
-      await supabase.auth.signOut();
-      await revokeDoorpassAction();
-      redirect(
-        `/admin/login?doorpass=${encodeURIComponent(
-          secretDoorpass
-        )}&error=Akses+ditolak:+Akun+ini+belum+terdaftar+sebagai+admin`
+      await supabase.from('profiles').upsert(
+        {
+          id: authData.user.id,
+          email: authData.user.email || email,
+          role: 'admin',
+        },
+        { onConflict: 'id' }
       );
+    } else {
+      const currentRole = (profile.role || '').trim().toLowerCase();
+      // Izinkan jika role adalah 'admin' atau kosong; tolak jika role secara eksplisit bukan admin
+      if (currentRole && currentRole !== 'admin') {
+        roleAccessDenied = true;
+      }
     }
   } catch (profErr) {
     console.warn('Profile sync note:', profErr);
+  }
+
+  if (roleAccessDenied) {
+    await supabase.auth.signOut();
+    await revokeDoorpassAction();
+    redirect(
+      `/admin/login?doorpass=${encodeURIComponent(
+        secretDoorpass
+      )}&error=Akses+ditolak:+Akun+ini+belum+terdaftar+sebagai+admin`
+    );
   }
 
   // Berhasil! Aktifkan sesi doorpass terenkripsi SHA-256

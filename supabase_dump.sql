@@ -342,6 +342,23 @@ FOR SELECT
 TO authenticated
 USING (auth.uid() = id);
 
+-- Policy INSERT pada profiles: User authenticated dapat mendaftarkan profil dirinya sendiri
+DROP POLICY IF EXISTS "Allow authenticated insert own profile" ON public.profiles;
+CREATE POLICY "Allow authenticated insert own profile"
+ON public.profiles
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = id);
+
+-- Policy UPDATE pada profiles: User authenticated dapat memperbarui profil miliknya
+DROP POLICY IF EXISTS "Allow authenticated update own profile" ON public.profiles;
+CREATE POLICY "Allow authenticated update own profile"
+ON public.profiles
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
 -- ------------------------------------------------------------------------------
 -- 5. POLICIES CRUD TABEL PROYEK (KEAMANAN BERLAPIS BERBASIS ROLE ADMIN)
 -- ------------------------------------------------------------------------------
