@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,6 +19,76 @@ import { projects, ProjectItem } from "../../../../data";
 import { supabase } from "@/lib/supabase";
 
 export const dynamicParams = true;
+
+interface ProjectDetailProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ProjectDetailProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const rawId = resolvedParams.id;
+  const decodedId = decodeURIComponent(rawId);
+
+  let title = "Detail Proyek";
+  let description = "Studi kasus komprehensif, arsitektur sistem, dan teknologi terapan oleh Asri Mela Aldian Syah.";
+  let image = "/images/managemens.png";
+
+  try {
+    const { data: dbItem } = await supabase
+      .from("proyek")
+      .select("judul, title, deskripsi, description, image")
+      .or(`id.eq.${rawId},slug.eq.${rawId},id.eq.${decodedId},slug.eq.${decodedId}`)
+      .maybeSingle();
+
+    if (dbItem) {
+      title = dbItem.judul || dbItem.title || title;
+      description = dbItem.deskripsi || dbItem.description || description;
+      image = dbItem.image || image;
+    } else {
+      const local = projects.find(
+        (p) => p.id === rawId || p.slug === rawId || p.id === decodedId || p.slug === decodedId
+      );
+      if (local) {
+        title = local.title;
+        description = local.description;
+        image = local.image;
+      }
+    }
+  } catch {
+    const local = projects.find(
+      (p) => p.id === rawId || p.slug === rawId || p.id === decodedId || p.slug === decodedId
+    );
+    if (local) {
+      title = local.title;
+      description = local.description;
+      image = local.image;
+    }
+  }
+
+  return {
+    title: `${title} | Studi Kasus Proyek`,
+    description,
+    openGraph: {
+      title: `${title} — Portfolio Asri Mela Aldian Syah`,
+      description,
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: `Tangkapan layar demo proyek ${title}`,
+        },
+      ],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} — Portfolio Asri Mela`,
+      description,
+      images: [image],
+    },
+  };
+}
 
 export default async function ProjectDetailPage({
   params,

@@ -16,12 +16,73 @@ const manrope = Manrope({
   display: "swap",
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://asrimela.vercel.app');
+
 export const metadata: Metadata = {
-  title: "Asri Mela — Personal Portfolio",
-  description: "Portfolio pribadi Asri Mela Aldian Syah — RPL Student & Aspiring Web Developer.",
-  keywords: ["Asri Mela Aldian Syah", "Mela", "Portfolio", "Web Developer", "Frontend Developer", "RPL"],
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Asri Mela Aldian Syah — Website Profil & Portfolio',
+    template: '%s | Asri Mela Aldian Syah',
+  },
+  description:
+    'Portofolio siswa SMK Rekayasa Perangkat Lunak (RPL), dibangun dengan Next.js, Tailwind CSS, dan Supabase.',
+  keywords: [
+    'Asri Mela Aldian Syah',
+    'Asri Mela',
+    'Mela',
+    'Portfolio Asri Mela',
+    'Portofolio Siswa SMK',
+    'Rekayasa Perangkat Lunak',
+    'RPL SMK',
+    'Web Developer',
+    'Frontend Developer',
+    'Fullstack Developer Junior',
+    'Next.js 16 Portfolio',
+    'React 19 Developer',
+    'Tailwind CSS',
+    'Supabase Database',
+    'Junior Web Developer Indonesia',
+    'Student Portfolio',
+    'Autograph Portfolio',
+  ],
+  authors: [{ name: 'Asri Mela Aldian Syah', url: siteUrl }],
+  creator: 'Asri Mela Aldian Syah',
+  publisher: 'Asri Mela Aldian Syah',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: 'Asri Mela Aldian Syah — Website Profil & Portfolio',
+    description:
+      'Portofolio siswa SMK Rekayasa Perangkat Lunak, dibangun dengan Next.js dan Supabase.',
+    url: siteUrl,
+    siteName: 'Portfolio Asri Mela Aldian Syah',
+    locale: 'id_ID',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Asri Mela Aldian Syah — Website Profil & Portfolio',
+    description:
+      'Portofolio siswa SMK Rekayasa Perangkat Lunak (RPL), dibangun dengan Next.js dan Supabase.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
-    icon: "/favicon.ico",
+    icon: '/favicon.ico',
   },
 };
 
@@ -51,6 +112,30 @@ export default function RootLayout({
       </head>
       <body className={`${cormorant.variable} ${manrope.variable}`}>
         {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Person',
+              name: 'Asri Mela Aldian Syah',
+              alternateName: 'Asri Mela',
+              url: siteUrl,
+              jobTitle: 'Web Developer',
+              description:
+                'Siswa Rekayasa Perangkat Lunak (RPL) & Web Developer yang berfokus pada Next.js, React, dan Supabase.',
+              knowsAbout: [
+                'Next.js',
+                'React',
+                'TypeScript',
+                'Tailwind CSS',
+                'Supabase',
+                'Web Development',
+                'Software Engineering',
+              ],
+            }),
+          }}
+        />
       </body>
     </html>
   );

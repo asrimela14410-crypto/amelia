@@ -6,9 +6,24 @@ import Footer from "@/components/Footer";
 import { projects, ProjectItem } from "../../../data";
 import { supabase } from "@/lib/supabase";
 
-export const metadata = {
-  title: "Katalog Proyek & Karya — Asri Mela",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Katalog Proyek & Karya",
   description: "Daftar lengkap karya kejuruan dan proyek pengembangan web oleh Asri Mela Aldian Syah.",
+  keywords: [
+    "Katalog Proyek",
+    "Karya Siswa RPL",
+    "Web Application",
+    "Fullstack Project",
+    "Frontend Showcase",
+    "Asri Mela Aldian Syah",
+    "Supabase Next.js",
+  ],
+  openGraph: {
+    title: "Katalog Proyek & Karya — Asri Mela Aldian Syah",
+    description: "Jelajahi portofolio proyek web, fullstack, dan frontend aplikasi karya Asri Mela Aldian Syah.",
+  },
 };
 
 const CATEGORIES = [

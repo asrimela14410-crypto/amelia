@@ -170,7 +170,21 @@ portofolio/
 
 Berikut adalah rangkuman perjalanan rilis dan pembaruan pada website portofolio ini:
 
-### 📌 Versi 2.2.0 (Terbaru)
+### 📌 Versi 3.0.0 (Modul Pertemuan 05 - Penutup Seri Next.js Mahir)
+- **Metadata Statis & Dinamis Lengkap**:
+  - `title.template` konsisten (`%s | Asri Mela Aldian Syah`) di [src/app/layout.tsx](file:///d:/project%20rpl/next%20js%20kali/portofolio/src/app/layout.tsx).
+  - Kata kunci pencarian kaya (SEO Keywords) untuk nama, kejuruan SMK RPL, keahlian web, dan portofolio.
+  - Dynamic `generateMetadata()` di halaman studi kasus proyek [src/app/project/[id]/page.tsx](file:///d:/project%20rpl/next%20js%20kali/portofolio/src/app/project/[id]/page.tsx) yang sinkron langsung dengan database Supabase.
+- **Gambar Open Graph Otomatis (`opengraph-image.tsx`)**:
+  - Dibuat menggunakan `ImageResponse` dari `next/og` (ukuran 1200x630).
+  - Desain editorial profesional lengkap dengan badge kejuruan, tag teknologi, dan elemen **Digital Autograph / Signature**.
+- **Mesin Pencari (robots.ts & sitemap.ts Dinamis)**:
+  - File [src/app/robots.ts](file:///d:/project%20rpl/next%20js%20kali/portofolio/src/app/robots.ts) mengizinkan seluruh halaman publik dan memproteksi rute privat `/admin/`.
+  - File [src/app/sitemap.ts](file:///d:/project%20rpl/next%20js%20kali/portofolio/src/app/sitemap.ts) secara dinamis meng-query seluruh proyek dari Supabase dan menghasilkan URL sitemap otomatis.
+- **Structured Data JSON-LD**: Skema `Person` dan `WebSite` standar schema.org tersemat di layout utama.
+- **Optimasi Gambar (next/image & alt teks deskriptif)**: Seluruh aset visual menggunakan `next/image` dengan atribut `alt` kontekstual untuk aksesibilitas dan audit Lighthouse.
+
+### 📌 Versi 2.2.0
 - **Penyempurnaan Status Proyek Internal**: Mengganti tautan luar placeholder dengan indikator status resmi bahwa proyek berstatus *Offline Showcase / Proyek Internal*.
 - **Integrasi Tombol Konsultasi**: Menambahkan tombol *"Tanyakan Proyek Ini"* pada halaman studi kasus yang menghubungkan pengguna langsung ke bagian kontak.
 - **Halaman Error 404 Kustom yang Ditingkatkan**: Menambahkan ornamen origami paper airplane, kepakan sayap kupu-kupu mini, dan tombol pemulihan rute.

@@ -112,6 +112,40 @@ export default function AboutSection() {
                 </p>
               </div>
             </div>
+
+            {/* Digital Autograph / Signature */}
+            <div
+              className="pt-6 mt-6 border-t flex flex-wrap items-center justify-between gap-4"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="text-[10px] tracking-[0.25em] uppercase font-semibold"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  ✍️ Autograph:
+                </span>
+                <span
+                  className="text-2xl sm:text-3xl italic tracking-wide"
+                  style={{
+                    fontFamily: "var(--font-cormorant)",
+                    color: "var(--text)",
+                  }}
+                >
+                  ~ Asri Mela Aldian Syah ~
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full border text-[11px] font-medium"
+                style={{
+                  borderColor: "var(--border)",
+                  background: "var(--bg-soft)",
+                  color: "var(--accent)",
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Verified Student Portfolio
+              </div>
+            </div>
           </div>
         </div>
 
