@@ -190,7 +190,7 @@ export default async function Image() {
                 fontWeight: 600,
               }}
             >
-              asrimela.vercel.app
+              asri-mela.my.id
             </span>
           </div>
 

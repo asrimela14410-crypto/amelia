@@ -17,8 +17,7 @@ const manrope = Manrope({
 });
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://asrimela.vercel.app');
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://asri-mela.my.id';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -63,12 +62,29 @@ export const metadata: Metadata = {
     siteName: 'Portfolio Asri Mela Aldian Syah',
     locale: 'id_ID',
     type: 'website',
+    images: [
+      {
+        url: `${siteUrl}/images/autograph.png`,
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: 'Official Autograph & Portfolio Asri Mela Aldian Syah',
+      },
+      {
+        url: `${siteUrl}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: 'Open Graph Image Asri Mela Aldian Syah',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Asri Mela Aldian Syah — Website Profil & Portfolio',
     description:
       'Portofolio siswa SMK Rekayasa Perangkat Lunak (RPL), dibangun dengan Next.js dan Supabase.',
+    images: [`${siteUrl}/images/autograph.png`],
   },
   robots: {
     index: true,

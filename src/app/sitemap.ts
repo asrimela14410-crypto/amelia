@@ -4,8 +4,7 @@ import { projects } from '../../data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const BASE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://asrimela.vercel.app');
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://asri-mela.my.id';
 
   let projectEntries: MetadataRoute.Sitemap = [];
 
