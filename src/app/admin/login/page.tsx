@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getDoorpassSecret } from '@/lib/doorpass/core';
 import { setDoorpassUnlockedAction, revokeDoorpassAction } from '@/lib/doorpass/actions';
+import LoginFormClient from './LoginFormClient';
 
 async function loginAction(formData: FormData) {
   'use server';
@@ -137,50 +138,10 @@ export default async function AdminLoginPage({
           </p>
         )}
 
-        <form action={loginAction} className="space-y-4">
-          <input type="hidden" name="doorpass" value={params.doorpass || ''} />
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              Email Admin
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="admin@gmail.com"
-              className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="••••••••"
-              className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors cursor-pointer shadow-sm"
-          >
-            Masuk ke Panel Admin
-          </button>
-        </form>
+        <LoginFormClient
+          doorpass={params.doorpass || ''}
+          loginAction={loginAction}
+        />
       </div>
     </main>
   );
