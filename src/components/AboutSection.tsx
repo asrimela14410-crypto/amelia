@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Code2, Palette, ShieldCheck } from "lucide-react";
 
 export default function AboutSection() {
@@ -111,48 +110,6 @@ export default function AboutSection() {
                 <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
                   Indonesia &amp; English
                 </p>
-              </div>
-            </div>
-
-            {/* Digital Autograph / Signature */}
-            <div
-              className="pt-6 mt-6 border-t space-y-3.5"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-[10px] tracking-[0.25em] uppercase font-semibold flex items-center gap-1.5"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  <span>✍️</span> Official Autograph
-                </span>
-                <div
-                  className="flex items-center gap-2 px-3 py-1 rounded-full border text-[11px] font-medium"
-                  style={{
-                    borderColor: "var(--border)",
-                    background: "var(--bg-soft)",
-                    color: "var(--accent)",
-                  }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Verified Student Signature
-                </div>
-              </div>
-
-              {/* Autograph Postcard Frame */}
-              <div
-                className="relative rounded-2xl overflow-hidden border p-2.5 sm:p-3 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:shadow-xl group"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <div className="relative aspect-[16/10] sm:aspect-[2.3/1] w-full rounded-xl overflow-hidden bg-[#faf8f5]">
-                  <Image
-                    src="/images/autograph.png"
-                    alt="Official Autograph Asri Mela - Crafted with love & quiet thoughts"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 550px"
-                    className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                </div>
               </div>
             </div>
           </div>
