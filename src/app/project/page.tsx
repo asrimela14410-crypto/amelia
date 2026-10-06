@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Filter, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { projects } from "../../../data";
+import { projects, ProjectItem } from "../../../data";
+import { supabase } from "@/lib/supabase";
 
 export const metadata = {
   title: "Katalog Proyek & Karya — Asri Mela",
@@ -25,9 +26,51 @@ export default async function ProjectCatalogPage({
   const resolvedParams = await searchParams;
   const activeCategory = resolvedParams.category?.toLowerCase() || "all";
 
-  const filteredProjects = activeCategory === "all"
-    ? projects
-    : projects.filter((p) => p.category === activeCategory);
+  // Ambil data proyek dari Supabase secara realtime
+  const { data: dbProjects } = await supabase
+    .from("proyek")
+    .select("*")
+    .order("id", { ascending: true });
+
+  const allProjects: ProjectItem[] =
+    dbProjects && dbProjects.length > 0
+      ? dbProjects.map((item) => {
+          const cat = (item.category || item.kategori || "web").toLowerCase();
+          return {
+            id: String(item.id),
+            slug: item.slug || String(item.id),
+            title: item.title || item.judul || "Proyek",
+            category: (cat === "fullstack"
+              ? "fullstack"
+              : cat === "frontend"
+              ? "frontend"
+              : "web") as "web" | "fullstack" | "frontend",
+            categoryLabel: item.category_label || item.categoryLabel || item.kategori || "Web",
+            description: item.description || item.deskripsi || "",
+            fullDescription: item.full_description || item.description || item.deskripsi || "",
+            image: item.image || "/images/managemens.png",
+            techStack: Array.isArray(item.tech_stack)
+              ? item.tech_stack
+              : typeof item.tech_stack === "string"
+              ? item.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean)
+              : typeof item.teknologi === "string"
+              ? item.teknologi.split(",").map((t: string) => t.trim()).filter(Boolean)
+              : [],
+            features: Array.isArray(item.features)
+              ? item.features
+              : typeof item.features === "string"
+              ? item.features.split("\n").map((f: string) => f.trim()).filter(Boolean)
+              : [],
+            demoUrl: item.demo_url || item.link_deploy || item.link || "",
+            githubUrl: item.github_url || item.link || "",
+          };
+        })
+      : projects;
+
+  const filteredProjects =
+    activeCategory === "all"
+      ? allProjects
+      : allProjects.filter((p) => p.category === activeCategory);
 
   return (
     <>
@@ -52,16 +95,29 @@ export default async function ProjectCatalogPage({
             </Link>
 
             <div>
-              <div
-                className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-semibold uppercase tracking-wider mb-3"
-                style={{
-                  borderColor: "var(--border)",
-                  background: "var(--bg-soft)",
-                  color: "var(--accent)",
-                }}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Arsip Karya Kejuruan
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                <div
+                  className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    borderColor: "var(--border)",
+                    background: "var(--bg-soft)",
+                    color: "var(--accent)",
+                  }}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Arsip Karya Kejuruan
+                </div>
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                  style={{
+                    borderColor: "var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <span>Total:</span>
+                  <span className="font-bold text-indigo-500">{allProjects.length} Proyek</span>
+                </div>
               </div>
               <h1
                 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-tight"
@@ -87,8 +143,8 @@ export default async function ProjectCatalogPage({
             {CATEGORIES.map((cat) => {
               const isSelected = activeCategory === cat.value;
               const count = cat.value === "all"
-                ? projects.length
-                : projects.filter((p) => p.category === cat.value).length;
+                ? allProjects.length
+                : allProjects.filter((p) => p.category === cat.value).length;
 
               return (
                 <Link

@@ -1,11 +1,60 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Code2, Sparkles } from "lucide-react";
-import { projects } from "../../data";
+import { projects as fallbackProjects, ProjectItem } from "../../data";
+import { supabase } from "@/lib/supabase";
 
-export default function ProjectsSection() {
-  const featuredProject = projects[0]; // Student Management System as spotlight
-  const secondaryProjects = projects.slice(1); // Management Magang & My App
+export default async function ProjectsSection() {
+  let activeProjects: ProjectItem[] = fallbackProjects;
+  try {
+    const { data: dbProjects } = await supabase
+      .from("proyek")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (dbProjects && dbProjects.length > 0) {
+      activeProjects = dbProjects.map((item) => {
+        const cat = (item.category || item.kategori || "web").toLowerCase();
+        return {
+          id: String(item.id),
+          slug: item.slug || String(item.id),
+          title: item.title || item.judul || "Proyek",
+          category: (cat === "fullstack"
+            ? "fullstack"
+            : cat === "frontend"
+            ? "frontend"
+            : "web") as "web" | "fullstack" | "frontend",
+          categoryLabel: item.category_label || item.categoryLabel || item.kategori || "Web",
+          description: item.description || item.deskripsi || "",
+          fullDescription: item.full_description || item.description || item.deskripsi || "",
+          image: item.image || "/images/managemens.png",
+          techStack: Array.isArray(item.tech_stack)
+            ? item.tech_stack
+            : typeof item.tech_stack === "string"
+            ? item.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : typeof item.teknologi === "string"
+            ? item.teknologi.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : [],
+          features: Array.isArray(item.features)
+            ? item.features
+            : typeof item.features === "string"
+            ? item.features.split("\n").map((f: string) => f.trim()).filter(Boolean)
+            : [
+                "Desain antarmuka responsif dan modern",
+                "Terintegrasi dengan database cloud Supabase",
+                "Optimasi performa dengan Next.js Server Components",
+              ],
+          demoUrl: item.demo_url || item.link_deploy || item.link || "",
+          githubUrl: item.github_url || item.link || "",
+        };
+      });
+    }
+  } catch {
+    // fallback to static projects
+  }
+
+  const featuredProject = activeProjects[0] || fallbackProjects[0];
+  const secondaryProjects = activeProjects.slice(1);
 
   return (
     <section id="projects" className="section-pad relative overflow-hidden">

@@ -159,6 +159,27 @@ export const projects: ProjectItem[] = [
     demoUrl: "#",
     githubUrl: "#",
   },
+  {
+    id: "4",
+    slug: "Internet Afting",
+    title: "Pelajar / Game Rental Platform",
+    category: "fullstack",
+    categoryLabel: "Fullstack Web",
+    description:
+      "A feature-rich web portal for secure, automated game account rentals with an intuitive user interface and real-time management.",
+    fullDescription:
+      "Platform portal persewaan akun game digital yang aman dan otomatis dengan antarmuka pengguna yang intuitif, integrasi database Supabase, dan manajemen akun secara real-time.",
+    image: "/images/pinjam.png",
+    techStack: ["Next.js", "Tailwind CSS", "Shadcn UI", "Supabase", "TypeScript"],
+    features: [
+      "Sistem peminjaman dan persewaan akun terverifikasi",
+      "Manajemen status akun dan riwayat transaksi pengguna",
+      "Integrasi database real-time dengan perlindungan Row Level Security",
+      "Antarmuka responsif dan ramah pengguna",
+    ],
+    demoUrl: "#",
+    githubUrl: "#",
+  },
 ];
 
 export const userReviewData = [

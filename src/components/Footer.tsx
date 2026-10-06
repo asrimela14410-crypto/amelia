@@ -1,4 +1,5 @@
-import { Mail } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -41,7 +42,17 @@ export default function Footer() {
           style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
         >
           <p>© 2026 Asri Mela Aldian Syah. All rights reserved.</p>
-          <p>Made with passion in Indonesia.</p>
+          <div className="flex items-center gap-4">
+            <p>Made with passion in Indonesia.</p>
+            <Link
+              href="/admin/proyek"
+              className="inline-flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity text-[11px] underline"
+              title="Portal Admin"
+            >
+              <Lock className="w-3 h-3" />
+              <span>Admin Panel</span>
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, Moon, Sun, X } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "Beranda", href: "#home" },
-  { label: "Tentang", href: "#about" },
-  { label: "Keahlian", href: "#skills" },
-  { label: "Proyek", href: "#projects" },
-  { label: "Kontak", href: "#contact" },
+  { label: "Beranda", targetId: "home" },
+  { label: "Tentang", targetId: "about" },
+  { label: "Keahlian", targetId: "skills" },
+  { label: "Proyek", targetId: "projects" },
+  { label: "Kontak", targetId: "contact" },
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,8 +29,10 @@ export default function Navbar() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
 
-      // Spy scroll for active navigation item
-      const sections = NAV_ITEMS.map((item) => item.href.substring(1));
+      if (!isHomePage) return;
+
+      // Spy scroll for active navigation item on homepage
+      const sections = NAV_ITEMS.map((item) => item.targetId);
       const scrollPos = window.scrollY + 140;
 
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -39,8 +45,23 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", handleScroll);
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isHomePage]);
+
+  // Smooth scroll saat user pindah dari halaman sub (detail proyek) ke homepage dengan hash (#about, #contact, dll)
+  useEffect(() => {
+    if (isHomePage && typeof window !== "undefined" && window.location.hash) {
+      const hashId = window.location.hash.substring(1);
+      const target = document.getElementById(hashId);
+      if (target) {
+        const timer = setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth" });
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isHomePage, pathname]);
 
   const toggleTheme = () => {
     const nextDark = !isDark;
@@ -52,6 +73,10 @@ export default function Navbar() {
       document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
+  };
+
+  const getNavHref = (targetId: string) => {
+    return isHomePage ? `#${targetId}` : `/#${targetId}`;
   };
 
   return (
@@ -67,39 +92,76 @@ export default function Navbar() {
       }}
     >
       <nav className="container-custom flex items-center justify-between h-16 md:h-20">
-        <a
-          href="#home"
-          className="text-xl md:text-2xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-cormorant)", color: "var(--text)" }}
-        >
-          Mela<span style={{ color: "var(--accent)" }}>.</span>
-        </a>
+        {isHomePage ? (
+          <a
+            href="#home"
+            className="text-xl md:text-2xl font-semibold tracking-tight"
+            style={{ fontFamily: "var(--font-cormorant)", color: "var(--text)" }}
+          >
+            Mela<span style={{ color: "var(--accent)" }}>.</span>
+          </a>
+        ) : (
+          <Link
+            href="/"
+            className="text-xl md:text-2xl font-semibold tracking-tight"
+            style={{ fontFamily: "var(--font-cormorant)", color: "var(--text)" }}
+          >
+            Mela<span style={{ color: "var(--accent)" }}>.</span>
+          </Link>
+        )}
 
         {/* Desktop Links */}
         <ul className="hidden md:flex items-center gap-8">
           {NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item.href.substring(1);
+            const isActive = isHomePage
+              ? activeSection === item.targetId
+              : item.targetId === "projects" &&
+                (pathname.startsWith("/project") || pathname.startsWith("/proyek"));
+            const targetHref = getNavHref(item.targetId);
+
             return (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  className={`text-sm transition-all relative py-2 font-medium ${
-                    isActive
-                      ? "opacity-100"
-                      : "opacity-70 hover:opacity-100"
-                  }`}
-                  style={{
-                    color: isActive ? "var(--accent)" : "var(--text)",
-                  }}
-                >
-                  {item.label}
-                  {isActive && (
-                    <span
-                      className="absolute -bottom-0.5 left-0 right-0 h-px"
-                      style={{ background: "var(--accent)" }}
-                    />
-                  )}
-                </a>
+              <li key={item.targetId}>
+                {isHomePage ? (
+                  <a
+                    href={targetHref}
+                    className={`text-sm transition-all relative py-2 font-medium ${
+                      isActive
+                        ? "opacity-100"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      color: isActive ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {item.label}
+                    {isActive && (
+                      <span
+                        className="absolute -bottom-0.5 left-0 right-0 h-px"
+                        style={{ background: "var(--accent)" }}
+                      />
+                    )}
+                  </a>
+                ) : (
+                  <Link
+                    href={targetHref}
+                    className={`text-sm transition-all relative py-2 font-medium ${
+                      isActive
+                        ? "opacity-100"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      color: isActive ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {item.label}
+                    {isActive && (
+                      <span
+                        className="absolute -bottom-0.5 left-0 right-0 h-px"
+                        style={{ background: "var(--accent)" }}
+                      />
+                    )}
+                  </Link>
+                )}
               </li>
             );
           })}
@@ -111,7 +173,7 @@ export default function Navbar() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="w-10 h-10 rounded-full border flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            className="w-10 h-10 rounded-full border flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{
               borderColor: "var(--border)",
               background: "var(--surface)",
@@ -129,7 +191,7 @@ export default function Navbar() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
-            className="md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            className="md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{
               borderColor: "var(--border)",
               background: "var(--surface)",
@@ -157,19 +219,37 @@ export default function Navbar() {
       >
         <ul className="container-custom py-4 flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item.href.substring(1);
+            const isActive = isHomePage
+              ? activeSection === item.targetId
+              : item.targetId === "projects" &&
+                (pathname.startsWith("/project") || pathname.startsWith("/proyek"));
+            const targetHref = getNavHref(item.targetId);
+
             return (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-3 text-sm font-medium transition-colors"
-                  style={{
-                    color: isActive ? "var(--accent)" : "var(--text)",
-                  }}
-                >
-                  {item.label}
-                </a>
+              <li key={item.targetId}>
+                {isHomePage ? (
+                  <a
+                    href={targetHref}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-3 text-sm font-medium transition-colors"
+                    style={{
+                      color: isActive ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={targetHref}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-3 text-sm font-medium transition-colors"
+                    style={{
+                      color: isActive ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             );
           })}

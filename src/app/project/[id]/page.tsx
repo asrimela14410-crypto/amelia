@@ -14,31 +14,150 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { projects } from "../../../../data";
+import { projects, ProjectItem } from "../../../../data";
+import { supabase } from "@/lib/supabase";
 
-export async function generateStaticParams() {
-  const paths: { id: string }[] = [];
-  projects.forEach((p) => {
-    paths.push({ id: p.id });
-    paths.push({ id: p.slug });
-  });
-  return paths;
-}
+export const dynamicParams = true;
 
 export default async function ProjectDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const project = projects.find((p) => p.id === id || p.slug === id);
+  const resolvedParams = await params;
+  const rawId = resolvedParams.id;
+  const decodedId = decodeURIComponent(rawId);
+
+  // Coba ambil dari Supabase terlebih dahulu
+  let project: ProjectItem | undefined;
+  try {
+    let dbItem = null;
+
+    // 1. Coba cari dengan eq id (aman untuk integer maupun text)
+    const resId = await supabase
+      .from("proyek")
+      .select("*")
+      .eq("id", rawId)
+      .maybeSingle();
+
+    if (resId.data) {
+      dbItem = resId.data;
+    } else if (decodedId !== rawId) {
+      const resDecodedId = await supabase
+        .from("proyek")
+        .select("*")
+        .eq("id", decodedId)
+        .maybeSingle();
+      if (resDecodedId.data) {
+        dbItem = resDecodedId.data;
+      }
+    }
+
+    // 2. Jika tidak ditemukan berdasarkan ID, coba cari berdasarkan slug
+    if (!dbItem) {
+      try {
+        const resSlug = await supabase
+          .from("proyek")
+          .select("*")
+          .eq("slug", rawId)
+          .maybeSingle();
+
+        if (resSlug.data) {
+          dbItem = resSlug.data;
+        } else if (decodedId !== rawId) {
+          const resDecodedSlug = await supabase
+            .from("proyek")
+            .select("*")
+            .eq("slug", decodedId)
+            .maybeSingle();
+          if (resDecodedSlug.data) {
+            dbItem = resDecodedSlug.data;
+          }
+        }
+      } catch {
+        // Kolom slug mungkin belum ada di beberapa database
+      }
+    }
+
+    if (dbItem) {
+      const cat = (dbItem.category || dbItem.kategori || "web").toLowerCase();
+      project = {
+        id: String(dbItem.id),
+        slug: dbItem.slug || String(dbItem.id),
+        title: dbItem.title || dbItem.judul || "Proyek",
+        category: (cat === "fullstack"
+          ? "fullstack"
+          : cat === "frontend"
+          ? "frontend"
+          : "web") as "web" | "fullstack" | "frontend",
+        categoryLabel: dbItem.category_label || dbItem.categoryLabel || dbItem.kategori || "Web",
+        description: dbItem.description || dbItem.deskripsi || "",
+        fullDescription: dbItem.full_description || dbItem.description || dbItem.deskripsi || "",
+        image: dbItem.image || "/images/managemens.png",
+        techStack: Array.isArray(dbItem.tech_stack)
+          ? dbItem.tech_stack
+          : typeof dbItem.tech_stack === "string"
+          ? dbItem.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean)
+          : typeof dbItem.teknologi === "string"
+          ? dbItem.teknologi.split(",").map((t: string) => t.trim()).filter(Boolean)
+          : [],
+        features: Array.isArray(dbItem.features)
+          ? dbItem.features
+          : typeof dbItem.features === "string"
+          ? dbItem.features.split("\n").map((f: string) => f.trim()).filter(Boolean)
+          : [
+              "Desain antarmuka responsif dan modern",
+              "Terintegrasi dengan database cloud Supabase",
+              "Optimasi performa dengan Next.js Server Components",
+            ],
+        demoUrl: dbItem.demo_url || dbItem.link_deploy || dbItem.link || "",
+        githubUrl: dbItem.github_url || dbItem.link || "",
+      };
+    }
+  } catch (err) {
+    console.error("Error fetching project detail:", err);
+  }
+
+  // Fallback ke data statis
+  if (!project) {
+    project = projects.find(
+      (p) =>
+        p.id === rawId ||
+        p.id === decodedId ||
+        p.slug === rawId ||
+        p.slug === decodedId
+    );
+  }
 
   if (!project) {
     notFound();
   }
 
-  // Other projects for seamless switching
-  const otherProjects = projects.filter((p) => p.id !== project.id);
+  // Other projects for seamless switching (bisa dari Supabase atau fallback)
+  let allList: ProjectItem[] = projects;
+  try {
+    const { data: dbList } = await supabase
+      .from("proyek")
+      .select("*")
+      .order("id", { ascending: true });
+    if (dbList && dbList.length > 0) {
+      allList = dbList.map((item) => ({
+        id: String(item.id),
+        slug: item.slug || String(item.id),
+        title: item.title || item.judul || "Proyek",
+        category: (item.category || item.kategori || "web").toLowerCase() as "web" | "fullstack" | "frontend",
+        categoryLabel: item.category_label || item.kategori || "Web",
+        description: item.description || item.deskripsi || "",
+        fullDescription: item.full_description || item.description || item.deskripsi || "",
+        image: item.image || "/images/managemens.png",
+        techStack: [],
+        features: [],
+        demoUrl: item.demo_url || item.link_deploy || item.link || "",
+        githubUrl: item.github_url || item.link || "",
+      }));
+    }
+  } catch {}
+  const otherProjects = allList.filter((p) => p.id !== project?.id && p.slug !== project?.slug);
 
   return (
     <>
