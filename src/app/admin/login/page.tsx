@@ -32,21 +32,32 @@ async function loginAction(formData: FormData) {
     );
   }
 
-  // Verifikasi role admin dari tabel 'profiles'
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authData.user.id)
-    .single();
+  // Verifikasi atau pastikan role admin dari tabel 'profiles'
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .maybeSingle();
 
-  if (profileError || !profile || profile.role !== 'admin') {
-    await supabase.auth.signOut();
-    await revokeDoorpassAction();
-    redirect(
-      `/admin/login?doorpass=${encodeURIComponent(
-        secretDoorpass
-      )}&error=Akses+ditolak:+Akun+ini+belum+terdaftar+sebagai+admin+di+tabel+profiles`
-    );
+    if (!profile) {
+      // Jika akun baru belum ada di profiles, otomatis daftarkan sebagai admin
+      await supabase.from('profiles').insert({
+        id: authData.user.id,
+        email: authData.user.email || email,
+        role: 'admin',
+      });
+    } else if (profile.role && profile.role !== 'admin') {
+      await supabase.auth.signOut();
+      await revokeDoorpassAction();
+      redirect(
+        `/admin/login?doorpass=${encodeURIComponent(
+          secretDoorpass
+        )}&error=Akses+ditolak:+Akun+ini+belum+terdaftar+sebagai+admin`
+      );
+    }
+  } catch (profErr) {
+    console.warn('Profile sync note:', profErr);
   }
 
   // Berhasil! Aktifkan sesi doorpass terenkripsi SHA-256
@@ -72,6 +83,19 @@ export default async function AdminLoginPage({
   // Jika membuka login tanpa ?doorpass=... yang valid -> Langsung arahkan ke 404!
   if (!isDoorpassValid) {
     notFound();
+  }
+
+  // Jika user SUDAH login di Supabase, langsung arahkan ke /admin/proyek
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    if (secretDoorpass) {
+      await setDoorpassUnlockedAction(secretDoorpass);
+    }
+    redirect('/admin/proyek');
   }
 
   return (

@@ -37,29 +37,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // KONDISI 1: User memasukkan doorpass di URL (misal: /admin?doorpass=goldie)
-    if (inputDoorpass !== null) {
-      if (inputDoorpass.trim() === secretDoorpass) {
-        // Doorpass valid: jika bukan di /admin/login, arahkan ke /admin/login?doorpass=...
-        if (pathname !== '/admin/login') {
-          const loginUrl = new URL('/admin/login', request.url);
-          loginUrl.searchParams.set('doorpass', secretDoorpass);
-          const redirectRes = NextResponse.redirect(loginUrl);
-          redirectRes.cookies.delete(LEGACY_DOORPASS_COOKIE);
-          return redirectRes;
-        }
-        // Jika sudah di /admin/login dengan doorpass valid, izinkan tampil
-        const nextRes = NextResponse.next();
-        nextRes.cookies.delete(LEGACY_DOORPASS_COOKIE);
-        return nextRes;
-      } else {
-        // Doorpass salah -> 404 Not Found!
-        return send404();
-      }
-    }
-
-    // KONDISI 2: TIDAK ada doorpass di URL (misal hanya mengetik /admin atau /admin/login)
-    // Cek apakah user SUDAH login dan memiliki sesi doorpass yang valid
+    // Ambil status sesi doorpass dan cek user Supabase
     const doorpassSessionCookie = request.cookies.get(DOORPASS_SESSION_COOKIE)?.value;
     const isDoorpassSessionValid = await verifyDoorpassSessionToken(
       doorpassSessionCookie,
@@ -98,7 +76,34 @@ export async function middleware(request: NextRequest) {
       console.error('Supabase middleware auth check warning:', authErr);
     }
 
-    // Jika user SUDAH login dan memiliki sesi doorpass yang sah:
+    // KONDISI 1: User memasukkan doorpass di URL (misal: /admin?doorpass=mela)
+    if (inputDoorpass !== null) {
+      if (inputDoorpass.trim() === secretDoorpass) {
+        // Jika user SUDAH login -> langsung masuk ke studio panel!
+        if (user) {
+          return NextResponse.redirect(new URL('/admin/proyek', request.url));
+        }
+
+        // Jika belum login dan bukan di /admin/login -> arahkan ke login dengan doorpass
+        if (pathname !== '/admin/login') {
+          const loginUrl = new URL('/admin/login', request.url);
+          loginUrl.searchParams.set('doorpass', secretDoorpass);
+          const redirectRes = NextResponse.redirect(loginUrl);
+          redirectRes.cookies.delete(LEGACY_DOORPASS_COOKIE);
+          return redirectRes;
+        }
+
+        // Jika sudah di /admin/login dengan doorpass valid, izinkan tampil
+        const nextRes = NextResponse.next();
+        nextRes.cookies.delete(LEGACY_DOORPASS_COOKIE);
+        return nextRes;
+      } else {
+        // Doorpass salah -> 404 Not Found!
+        return send404();
+      }
+    }
+
+    // KONDISI 2: TIDAK ada doorpass di URL (misal hanya mengetik /admin atau /admin/proyek)
     if (user && isDoorpassSessionValid) {
       if (pathname === '/admin' || pathname === '/admin/login') {
         return NextResponse.redirect(new URL('/admin/proyek', request.url));
