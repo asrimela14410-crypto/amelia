@@ -65,16 +65,10 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${siteUrl}/images/autograph.jpg`,
+        secureUrl: `${siteUrl}/images/autograph.jpg`,
         width: 1024,
         height: 764,
         type: 'image/jpeg',
-        alt: 'Official Autograph Asri Mela — Crafted with love & quiet thoughts',
-      },
-      {
-        url: `${siteUrl}/opengraph-image`,
-        width: 1200,
-        height: 630,
-        type: 'image/png',
         alt: 'Official Autograph Asri Mela — Crafted with love & quiet thoughts',
       },
     ],
