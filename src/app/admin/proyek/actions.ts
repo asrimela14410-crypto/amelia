@@ -22,9 +22,12 @@ async function getSupabaseClient() {
 /**
  * Helper untuk mengunggah file gambar ke Supabase Storage (bucket 'proyek-images')
  */
-async function uploadImageToSupabase(file: File, supabase: any): Promise<string | null> {
+async function uploadImageToSupabase(
+  file: File,
+  supabase: any
+): Promise<{ url: string | null; error: string | null }> {
   if (!file || file.size === 0 || !file.name) {
-    return null;
+    return { url: null, error: null };
   }
 
   try {
@@ -42,18 +45,39 @@ async function uploadImageToSupabase(file: File, supabase: any): Promise<string 
       });
 
     if (error) {
-      console.warn('Supabase storage upload notice (pastikan bucket proyek-images sudah dibuat):', error.message);
-      return null;
+      console.error('Supabase storage upload error:', error);
+      const msg = error.message || '';
+      const isNoSuchBucket =
+        msg.includes('Bucket not found') ||
+        (error as any).statusCode === '404' ||
+        (error as any).code === 'NoSuchBucket' ||
+        msg.includes('does not exist');
+
+      if (isNoSuchBucket) {
+        return {
+          url: null,
+          error:
+            "Bucket 'proyek-images' belum dibuat di Supabase Storage! Buka Dashboard Supabase > Storage > New bucket bernama 'proyek-images' (jadikan Public), atau jalankan file supabase_storage_setup.sql di SQL Editor.",
+        };
+      }
+
+      return {
+        url: null,
+        error: `Gagal upload gambar ke Supabase Storage: ${msg}`,
+      };
     }
 
     const { data: publicUrlData } = supabase.storage
       .from('proyek-images')
       .getPublicUrl(filePath);
 
-    return publicUrlData?.publicUrl || null;
-  } catch (err) {
+    return { url: publicUrlData?.publicUrl || null, error: null };
+  } catch (err: any) {
     console.error('Gagal upload gambar ke Supabase storage:', err);
-    return null;
+    return {
+      url: null,
+      error: `Gagal memproses upload gambar: ${err?.message || 'Error internal'}`,
+    };
   }
 }
 
@@ -80,9 +104,12 @@ export async function tambahProyekAction(formData: FormData) {
 
   // Proses upload file jika pengguna memilih file dari komputer
   if (imageFile && imageFile.size > 0 && imageFile.name) {
-    const uploadedUrl = await uploadImageToSupabase(imageFile, supabase);
-    if (uploadedUrl) {
-      image = uploadedUrl;
+    const uploadRes = await uploadImageToSupabase(imageFile, supabase);
+    if (uploadRes.error) {
+      return { success: false, error: uploadRes.error };
+    }
+    if (uploadRes.url) {
+      image = uploadRes.url;
     }
   }
 
@@ -211,9 +238,12 @@ export async function editProyekAction(formData: FormData) {
 
   // Proses upload file baru jika pengguna memilih file
   if (imageFile && imageFile.size > 0 && imageFile.name) {
-    const uploadedUrl = await uploadImageToSupabase(imageFile, supabase);
-    if (uploadedUrl) {
-      image = uploadedUrl;
+    const uploadRes = await uploadImageToSupabase(imageFile, supabase);
+    if (uploadRes.error) {
+      return { success: false, error: uploadRes.error };
+    }
+    if (uploadRes.url) {
+      image = uploadRes.url;
     }
   }
 
