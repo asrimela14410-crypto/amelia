@@ -79,18 +79,21 @@ export default function AdminStudioClient({
 
   const openAddModal = () => {
     setIsAddOpen(true);
+    setModalError(null);
     setAddFilePreview(null);
     setAddImageTab('upload');
   };
 
   const openEditModal = (item: DbProyekItem) => {
     setEditingProyek(item);
+    setModalError(null);
     setEditImagePath(item.image || '/images/managemens.png');
     setEditFilePreview(null);
     setEditImageTab('upload');
   };
 
   const [isPending, startTransition] = useTransition();
+  const [modalError, setModalError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{
     text: string;
     type: 'success' | 'error';
@@ -98,7 +101,7 @@ export default function AdminStudioClient({
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
-    setTimeout(() => setToastMessage(null), 4000);
+    setTimeout(() => setToastMessage(null), 5000);
   };
 
   // Form submit tambah proyek
@@ -106,6 +109,7 @@ export default function AdminStudioClient({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    setModalError(null);
     startTransition(async () => {
       const res = await tambahProyekAction(formData);
       if (res.success && res.data && res.data[0]) {
@@ -131,6 +135,7 @@ export default function AdminStudioClient({
         setIsAddOpen(false);
         showToast('Proyek baru berhasil ditambahkan ke Supabase!');
       } else {
+        setModalError(res.error || 'Gagal menambah proyek');
         showToast(res.error || 'Gagal menambah proyek', 'error');
       }
     });
@@ -141,6 +146,7 @@ export default function AdminStudioClient({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    setModalError(null);
     startTransition(async () => {
       const res = await editProyekAction(formData);
       if (res.success && res.data && res.data[0]) {
@@ -168,6 +174,7 @@ export default function AdminStudioClient({
         setEditingProyek(null);
         showToast('Perubahan proyek berhasil disimpan ke Supabase!');
       } else {
+        setModalError(res.error || 'Gagal mengedit proyek');
         showToast(res.error || 'Gagal mengedit proyek', 'error');
       }
     });
@@ -201,10 +208,10 @@ export default function AdminStudioClient({
       {/* Toast Alert */}
       {toastMessage && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-medium transition-all duration-300 ${
+          className={`fixed bottom-6 right-6 z-[100] max-w-md flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-medium transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 ${
             toastMessage.type === 'success'
-              ? 'bg-emerald-950/90 text-emerald-200 border-emerald-800'
-              : 'bg-red-950/90 text-red-200 border-red-800'
+              ? 'bg-emerald-950 text-emerald-200 border-emerald-800'
+              : 'bg-red-950 text-red-200 border-red-800'
           }`}
         >
           {toastMessage.type === 'success' ? (
@@ -903,6 +910,17 @@ export default function AdminStudioClient({
                 />
               </div>
 
+              {/* Kotak Error Eksplisit di Dalam Modal Tambah */}
+              {modalError && (
+                <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-start gap-3 animate-in fade-in">
+                  <AlertTriangle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-red-800 dark:text-red-200">Perhatian: Gagal Menyimpan</p>
+                    <p className="leading-relaxed">{modalError}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-3 sticky bottom-0 bg-white dark:bg-slate-900 pb-1">
                 <button
                   type="submit"
@@ -1188,6 +1206,17 @@ export default function AdminStudioClient({
                   className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* Kotak Error Eksplisit di Dalam Modal Edit */}
+              {modalError && (
+                <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-start gap-3 animate-in fade-in">
+                  <AlertTriangle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-red-800 dark:text-red-200">Perhatian: Gagal Menyimpan</p>
+                    <p className="leading-relaxed">{modalError}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-3 sticky bottom-0 bg-white dark:bg-slate-900 pb-1">
                 <button
