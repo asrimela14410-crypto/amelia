@@ -1,7 +1,12 @@
-// app/admin/layout.tsx
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { revokeDoorpassAction } from '@/lib/doorpass/actions';
+import {
+  DOORPASS_SESSION_COOKIE,
+  ADMIN_AUTH_COOKIE,
+  verifyDoorpassSessionToken,
+  verifyAdminAuthToken,
+} from '@/lib/doorpass/core';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 
@@ -12,6 +17,7 @@ async function logoutAction() {
   await supabase.auth.signOut();
 
   const cookieStore = await cookies();
+  cookieStore.delete(ADMIN_AUTH_COOKIE);
   for (const c of cookieStore.getAll()) {
     if (c.name.startsWith('sb-') || c.name.includes('auth-token')) {
       cookieStore.delete(c.name);
@@ -35,7 +41,17 @@ export default async function AdminLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  const cookieStore = await cookies();
+  const doorpassToken = cookieStore.get(DOORPASS_SESSION_COOKIE)?.value;
+  const isDoorpassUnlocked = await verifyDoorpassSessionToken(doorpassToken);
+
+  const adminAuthToken = cookieStore.get(ADMIN_AUTH_COOKIE)?.value;
+  const adminAuth = await verifyAdminAuthToken(adminAuthToken);
+
+  const displayEmail = user?.email || adminAuth.email || 'Admin';
+
+  // Jika belum login dan belum unlock doorpass, tampilkan children polos (misal halaman login)
+  if (!user && !isDoorpassUnlocked && !adminAuth.valid) {
     return <>{children}</>;
   }
 
@@ -64,7 +80,7 @@ export default async function AdminLayout({
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            {user?.email}
+            {displayEmail}
           </span>
           <form action={logoutAction}>
             <button

@@ -19,6 +19,8 @@ import { projects, ProjectItem } from "../../../../data";
 import { supabase } from "@/lib/supabase";
 
 export const dynamicParams = true;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface ProjectDetailProps {
   params: Promise<{ id: string }>;

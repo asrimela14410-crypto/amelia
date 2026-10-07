@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const CATEGORIES = [
   { label: "Semua", value: "all", href: "/project" },
   { label: "Web", value: "web", href: "/project?category=web" },
@@ -45,7 +48,7 @@ export default async function ProjectCatalogPage({
   const { data: dbProjects } = await supabase
     .from("proyek")
     .select("*")
-    .order("id", { ascending: true });
+    .order("created_at", { ascending: false });
 
   const allProjects: ProjectItem[] =
     dbProjects && dbProjects.length > 0

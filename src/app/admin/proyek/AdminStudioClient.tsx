@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Pencil,
@@ -61,6 +62,7 @@ export default function AdminStudioClient({
   initialProyek,
   userEmail,
 }: AdminStudioClientProps) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<'live' | 'table'>('live');
   const [proyekList, setProyekList] = useState<DbProyekItem[]>(initialProyek);
 
@@ -112,28 +114,31 @@ export default function AdminStudioClient({
     setModalError(null);
     startTransition(async () => {
       const res = await tambahProyekAction(formData);
-      if (res.success && res.data && res.data[0]) {
-        const raw = res.data[0];
+      if (res.success) {
+        const raw = res.data && res.data[0] ? res.data[0] : {};
         const itemBaru: DbProyekItem = {
           ...raw,
-          id: String(raw.id),
-          judul: raw.judul || raw.title || 'Untitled',
-          deskripsi: raw.deskripsi || raw.description || '',
+          id: String(raw.id || Date.now()),
+          judul: raw.judul || raw.title || (formData.get('judul') as string) || 'Untitled',
+          deskripsi: raw.deskripsi || raw.description || (formData.get('deskripsi') as string) || '',
           teknologi:
             raw.teknologi ||
             (Array.isArray(raw.tech_stack) ? raw.tech_stack.join(', ') : raw.tech_stack) ||
+            (formData.get('teknologi') as string) ||
             '',
-          kategori: raw.kategori || raw.category_label || raw.category || 'Web',
-          link: raw.link || raw.github_url || null,
-          link_deploy: raw.link_deploy || raw.demo_url || null,
+          kategori: raw.kategori || raw.category_label || raw.category || (formData.get('kategori') as string) || 'Web',
+          link: raw.link || raw.github_url || (formData.get('link') as string) || null,
+          link_deploy: raw.link_deploy || raw.demo_url || (formData.get('link_deploy') as string) || null,
           image: raw.image || addImagePath || '/images/managemens.png',
-          full_description: raw.full_description || raw.deskripsi || '',
+          full_description: raw.full_description || (formData.get('full_description') as string) || raw.deskripsi || '',
           features: raw.features || [],
-          role: raw.role || 'Full Stack Developer',
+          role: raw.role || (formData.get('role') as string) || 'Full Stack Developer',
         };
-        setProyekList((prev) => [...prev, itemBaru]);
+        // Masukkan proyek baru ke paling atas list agar langsung tampil di Spotlight
+        setProyekList((prev) => [itemBaru, ...prev]);
         setIsAddOpen(false);
         showToast('Proyek baru berhasil ditambahkan ke Supabase!');
+        router.refresh();
       } else {
         setModalError(res.error || 'Gagal menambah proyek');
         showToast(res.error || 'Gagal menambah proyek', 'error');
@@ -149,30 +154,33 @@ export default function AdminStudioClient({
     setModalError(null);
     startTransition(async () => {
       const res = await editProyekAction(formData);
-      if (res.success && res.data && res.data[0]) {
-        const raw = res.data[0];
+      if (res.success) {
+        const raw = res.data && res.data[0] ? res.data[0] : {};
         const updated: DbProyekItem = {
           ...raw,
-          id: String(raw.id),
-          judul: raw.judul || raw.title || 'Untitled',
-          deskripsi: raw.deskripsi || raw.description || '',
+          id: String(raw.id || editingProyek?.id),
+          judul: raw.judul || raw.title || (formData.get('judul') as string) || editingProyek?.judul || 'Untitled',
+          deskripsi: raw.deskripsi || raw.description || (formData.get('deskripsi') as string) || editingProyek?.deskripsi || '',
           teknologi:
             raw.teknologi ||
             (Array.isArray(raw.tech_stack) ? raw.tech_stack.join(', ') : raw.tech_stack) ||
+            (formData.get('teknologi') as string) ||
+            editingProyek?.teknologi ||
             '',
-          kategori: raw.kategori || raw.category_label || raw.category || 'Web',
-          link: raw.link || raw.github_url || null,
-          link_deploy: raw.link_deploy || raw.demo_url || null,
-          image: raw.image || editImagePath || '/images/managemens.png',
-          full_description: raw.full_description || raw.deskripsi || '',
-          features: raw.features || [],
-          role: raw.role || 'Full Stack Developer',
+          kategori: raw.kategori || raw.category_label || raw.category || (formData.get('kategori') as string) || editingProyek?.kategori || 'Web',
+          link: raw.link || raw.github_url || (formData.get('link') as string) || editingProyek?.link || null,
+          link_deploy: raw.link_deploy || raw.demo_url || (formData.get('link_deploy') as string) || editingProyek?.link_deploy || null,
+          image: raw.image || editImagePath || editingProyek?.image || '/images/managemens.png',
+          full_description: raw.full_description || (formData.get('full_description') as string) || editingProyek?.full_description || '',
+          features: raw.features || editingProyek?.features || [],
+          role: raw.role || (formData.get('role') as string) || editingProyek?.role || 'Full Stack Developer',
         };
         setProyekList((prev) =>
           prev.map((item) => (String(item.id) === String(updated.id) ? updated : item))
         );
         setEditingProyek(null);
         showToast('Perubahan proyek berhasil disimpan ke Supabase!');
+        router.refresh();
       } else {
         setModalError(res.error || 'Gagal mengedit proyek');
         showToast(res.error || 'Gagal mengedit proyek', 'error');
@@ -194,6 +202,7 @@ export default function AdminStudioClient({
         );
         setDeletingProyek(null);
         showToast('Proyek berhasil dihapus dari database!');
+        router.refresh();
       } else {
         showToast(res.error || 'Gagal menghapus proyek', 'error');
       }
@@ -765,6 +774,12 @@ export default function AdminStudioClient({
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            if (file.size > 8 * 1024 * 1024) {
+                              showToast('Ukuran file foto melebihi batas 8 MB! Silakan pilih file yang lebih kecil.', 'error');
+                              e.target.value = '';
+                              setAddFilePreview(null);
+                              return;
+                            }
                             setAddFilePreview(URL.createObjectURL(file));
                           }
                         }}
@@ -1057,6 +1072,12 @@ export default function AdminStudioClient({
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            if (file.size > 8 * 1024 * 1024) {
+                              showToast('Ukuran file foto melebihi batas 8 MB! Silakan pilih file yang lebih kecil.', 'error');
+                              e.target.value = '';
+                              setEditFilePreview(null);
+                              return;
+                            }
                             setEditFilePreview(URL.createObjectURL(file));
                           }
                         }}

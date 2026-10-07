@@ -372,57 +372,33 @@ FOR SELECT
 TO public
 USING (true);
 
--- Policy 2: INSERT untuk user authenticated (Admin)
+-- Policy 2: INSERT HANYA untuk User yang Login (Authenticated Admin)
 DROP POLICY IF EXISTS "Allow authenticated insert" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin insert" ON public.proyek;
 CREATE POLICY "Allow admin insert"
 ON public.proyek
 FOR INSERT
 TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-  )
-  OR auth.role() = 'authenticated'
-);
+WITH CHECK (auth.role() = 'authenticated');
 
--- Policy 3: UPDATE untuk user authenticated (Admin)
+-- Policy 3: UPDATE HANYA untuk User yang Login (Authenticated Admin)
 DROP POLICY IF EXISTS "Allow authenticated update" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin update" ON public.proyek;
 CREATE POLICY "Allow admin update"
 ON public.proyek
 FOR UPDATE
 TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-  )
-  OR auth.role() = 'authenticated'
-)
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-  )
-  OR auth.role() = 'authenticated'
-);
+USING (auth.role() = 'authenticated')
+WITH CHECK (auth.role() = 'authenticated');
 
--- Policy 4: DELETE untuk user authenticated (Admin)
+-- Policy 4: DELETE HANYA untuk User yang Login (Authenticated Admin)
 DROP POLICY IF EXISTS "Allow authenticated delete" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin delete" ON public.proyek;
 CREATE POLICY "Allow admin delete"
 ON public.proyek
 FOR DELETE
 TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-  )
-  OR auth.role() = 'authenticated'
-);
+USING (auth.role() = 'authenticated');
 
 -- ------------------------------------------------------------------------------
 -- 6. TRIGGER OTOMATIS: BUAT PROFIL SAAT USER BARU DIDAFTARKAN DI auth.users
@@ -443,85 +419,15 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ------------------------------------------------------------------------------
--- 7. BUAT / UPDATE AKUN ADMIN OTOMATIS (auth.users + auth.identities + profiles)
--- Kredensial default:
--- Email    : admin@gmail.com
--- Password : AdminPassword123!
+-- 7. PANDUAN AKUN ADMIN (SUPABASE AUTH)
+-- CATATAN: Supabase Auth mengelola tabel auth.users secara internal.
+-- Jangan meng-insert manual ke auth.users karena dapat menyebabkan 'Database error querying schema'.
+-- Untuk membuat akun Admin baru:
+-- 1. Buka Supabase Dashboard > Authentication > Users
+-- 2. Klik "Add user" -> "Create user"
+-- 3. Masukkan Email & Password admin, centang "Auto Confirm User"
+-- 4. Akun admin otomatis aktif dan siap digunakan untuk login di /admin/login!
 -- ------------------------------------------------------------------------------
-DO $$
-DECLARE
-  v_user_id UUID := gen_random_uuid();
-  v_email TEXT := 'admin@gmail.com';
-  v_password TEXT := 'AdminPassword123!';
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = v_email) THEN
-    -- 1. Insert ke auth.users
-    INSERT INTO auth.users (
-      id,
-      instance_id,
-      aud,
-      role,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      created_at,
-      updated_at
-    ) VALUES (
-      v_user_id,
-      '00000000-0000-0000-0000-000000000000',
-      'authenticated',
-      'authenticated',
-      v_email,
-      crypt(v_password, gen_salt('bf')),
-      NOW(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      '{}'::jsonb,
-      NOW(),
-      NOW()
-    );
-
-    -- 2. Insert ke auth.identities
-    INSERT INTO auth.identities (
-      id,
-      user_id,
-      provider_id,
-      identity_data,
-      provider,
-      last_sign_in_at,
-      created_at,
-      updated_at
-    ) VALUES (
-      v_user_id,
-      v_user_id,
-      v_user_id,
-      jsonb_build_object('sub', v_user_id, 'email', v_email),
-      'email',
-      NOW(),
-      NOW(),
-      NOW()
-    );
-
-    -- 3. Insert ke public.profiles dengan role 'admin'
-    INSERT INTO public.profiles (id, email, role)
-    VALUES (v_user_id, v_email, 'admin')
-    ON CONFLICT (id) DO UPDATE SET role = 'admin';
-
-  ELSE
-    -- Jika user admin sudah ada, pastikan password terupdate dan terdaftar di public.profiles
-    SELECT id INTO v_user_id FROM auth.users WHERE email = v_email;
-
-    UPDATE auth.users
-    SET encrypted_password = crypt(v_password, gen_salt('bf')),
-        email_confirmed_at = COALESCE(email_confirmed_at, NOW())
-    WHERE id = v_user_id;
-
-    INSERT INTO public.profiles (id, email, role)
-    VALUES (v_user_id, v_email, 'admin')
-    ON CONFLICT (id) DO UPDATE SET role = 'admin';
-  END IF;
-END $$;
 
 -- ------------------------------------------------------------------------------
 -- 8. SUPABASE STORAGE: BUCKET 'proyek-images' UNTUK FOTO PROYEK
@@ -545,26 +451,26 @@ DROP POLICY IF EXISTS "Allow Upload to Proyek Images" ON storage.objects;
 DROP POLICY IF EXISTS "Allow Update to Proyek Images" ON storage.objects;
 DROP POLICY IF EXISTS "Allow Delete to Proyek Images" ON storage.objects;
 
--- Policy 1: Publik dapat melihat gambar proyek
+-- Policy 1: Publik DAPAT melihat gambar proyek (SELECT Read-Only)
 CREATE POLICY "Public Access to Proyek Images"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'proyek-images');
 
--- Policy 2: Mengizinkan upload ke bucket proyek-images
+-- Policy 2: HANYA Admin Authenticated yang boleh upload ke bucket proyek-images
 CREATE POLICY "Allow Upload to Proyek Images"
 ON storage.objects FOR INSERT
-TO public
-WITH CHECK (bucket_id = 'proyek-images');
+TO authenticated
+WITH CHECK (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');
 
--- Policy 3: Mengizinkan update gambar
+-- Policy 3: HANYA Admin Authenticated yang boleh update gambar
 CREATE POLICY "Allow Update to Proyek Images"
 ON storage.objects FOR UPDATE
-TO public
-USING (bucket_id = 'proyek-images');
+TO authenticated
+USING (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');
 
--- Policy 4: Mengizinkan hapus gambar
+-- Policy 4: HANYA Admin Authenticated yang boleh hapus gambar
 CREATE POLICY "Allow Delete to Proyek Images"
 ON storage.objects FOR DELETE
-TO public
-USING (bucket_id = 'proyek-images');
+TO authenticated
+USING (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');

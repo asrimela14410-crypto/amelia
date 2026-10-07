@@ -1,7 +1,13 @@
 // app/admin/login/page.tsx
 import { redirect, notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { getDoorpassSecret } from '@/lib/doorpass/core';
+import {
+  getDoorpassSecret,
+  ADMIN_AUTH_COOKIE,
+  computeAdminAuthToken,
+  verifyAdminAuthToken,
+} from '@/lib/doorpass/core';
 import { setDoorpassUnlockedAction, revokeDoorpassAction } from '@/lib/doorpass/actions';
 import LoginFormClient from './LoginFormClient';
 
@@ -79,7 +85,17 @@ async function loginAction(formData: FormData) {
     );
   }
 
-  // Berhasil! Aktifkan sesi doorpass terenkripsi SHA-256
+  // Berhasil! Simpan sesi autentikasi admin yang valid dan aman selama 7 hari
+  const adminToken = await computeAdminAuthToken(email, secretDoorpass);
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_AUTH_COOKIE, adminToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7, // 7 hari agar tidak ter-logout tiba-tiba
+  });
+
   await setDoorpassUnlockedAction(secretDoorpass);
 
   redirect('/admin/proyek');
@@ -104,16 +120,17 @@ export default async function AdminLoginPage({
     notFound();
   }
 
-  // Jika user SUDAH login di Supabase, langsung arahkan ke /admin/proyek
+  // Jika user SUDAH login di Supabase atau memiliki sesi admin aktif -> langsung ke /admin/proyek
+  const cookieStore = await cookies();
+  const adminAuthToken = cookieStore.get(ADMIN_AUTH_COOKIE)?.value;
+  const adminAuthSession = await verifyAdminAuthToken(adminAuthToken, secretDoorpass);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    if (secretDoorpass) {
-      await setDoorpassUnlockedAction(secretDoorpass);
-    }
+  if (user || adminAuthSession.valid) {
     redirect('/admin/proyek');
   }
 
@@ -129,7 +146,7 @@ export default async function AdminLoginPage({
 
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Admin Login</h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-          Masukkan kredensial akun admin yang terdaftar di Supabase Auth &amp; tabel Profiles.
+          Masukkan email dan password akun admin Supabase Anda untuk mengelola portofolio.
         </p>
 
         {params?.error && (

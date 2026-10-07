@@ -33,30 +33,29 @@ DROP POLICY IF EXISTS "Allow authenticated insert proyek-images" ON storage.obje
 DROP POLICY IF EXISTS "Allow authenticated update proyek-images" ON storage.objects;
 DROP POLICY IF EXISTS "Allow authenticated delete proyek-images" ON storage.objects;
 
--- 3. POLICY 1 (READ): Pengunjung Website / Publik Dapat Melihat Foto Proyek
+-- 3. POLICY 1 (READ): Pengunjung Website / Publik HANYA Dapat Melihat Foto Proyek (SELECT)
 CREATE POLICY "Public Access to Proyek Images"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'proyek-images');
 
--- 4. POLICY 2 (INSERT): Mengizinkan Upload Foto ke Bucket 'proyek-images'
--- Mengizinkan user terautentikasi (admin) maupun proses Server Action mengunggah gambar
+-- 4. POLICY 2 (INSERT): HANYA Admin Terautentikasi (Authenticated) yang Boleh Upload Foto
 CREATE POLICY "Allow Upload to Proyek Images"
 ON storage.objects FOR INSERT
-TO public
-WITH CHECK (bucket_id = 'proyek-images');
+TO authenticated
+WITH CHECK (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');
 
--- 5. POLICY 3 (UPDATE): Mengizinkan Update/Overwrite Foto di Bucket
+-- 5. POLICY 3 (UPDATE): HANYA Admin Terautentikasi (Authenticated) yang Boleh Update Foto
 CREATE POLICY "Allow Update to Proyek Images"
 ON storage.objects FOR UPDATE
-TO public
-USING (bucket_id = 'proyek-images');
+TO authenticated
+USING (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');
 
--- 6. POLICY 4 (DELETE): Mengizinkan Hapus Foto di Bucket
+-- 6. POLICY 4 (DELETE): HANYA Admin Terautentikasi (Authenticated) yang Boleh Hapus Foto
 CREATE POLICY "Allow Delete to Proyek Images"
 ON storage.objects FOR DELETE
-TO public
-USING (bucket_id = 'proyek-images');
+TO authenticated
+USING (bucket_id = 'proyek-images' AND auth.role() = 'authenticated');
 
 -- ==============================================================================
 -- CATATAN:

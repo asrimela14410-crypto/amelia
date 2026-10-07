@@ -1,17 +1,37 @@
-// app/admin/proyek/page.tsx
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import {
+  getDoorpassSecret,
+  ADMIN_AUTH_COOKIE,
+  verifyAdminAuthToken,
+} from '@/lib/doorpass/core';
 import AdminStudioClient, { DbProyekItem } from './AdminStudioClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminProyekPage() {
+  const secretDoorpass = getDoorpassSecret() || '';
+  const cookieStore = await cookies();
+  const adminAuthToken = cookieStore.get(ADMIN_AUTH_COOKIE)?.value;
+  const adminAuth = await verifyAdminAuthToken(adminAuthToken, secretDoorpass);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user && !adminAuth.valid) {
+    redirect(`/admin/login?doorpass=${encodeURIComponent(secretDoorpass)}`);
+  }
+
+  const effectiveEmail = user?.email || adminAuth.email || 'Admin';
+
   const { data: rawProyek } = await supabase
     .from('proyek')
     .select('*')
-    .order('id', { ascending: true });
+    .order('created_at', { ascending: false });
 
   const daftarProyek: DbProyekItem[] = (rawProyek || []).map((item) => ({
     ...item,
@@ -35,7 +55,7 @@ export default async function AdminProyekPage() {
     <div className="w-full">
       <AdminStudioClient
         initialProyek={daftarProyek}
-        userEmail={user?.email}
+        userEmail={effectiveEmail}
       />
     </div>
   );

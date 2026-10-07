@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface LoginFormClientProps {
   doorpass: string;
@@ -98,7 +98,7 @@ export default function LoginFormClient({
         {isSubmitting ? (
           <>
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Memverifikasi...</span>
+            <span>Memverifikasi Akun Admin...</span>
           </>
         ) : (
           <>

@@ -10,7 +10,7 @@ export default async function ProjectsSection() {
     const { data: dbProjects } = await supabase
       .from("proyek")
       .select("*")
-      .order("id", { ascending: true });
+      .order("created_at", { ascending: false });
 
     if (dbProjects && dbProjects.length > 0) {
       activeProjects = dbProjects.map((item) => {

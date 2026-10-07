@@ -195,7 +195,7 @@ export async function tambahProyekAction(formData: FormData) {
 
     if (error.code === '42501') {
       userFriendlyError =
-        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin di /admin/login atau tambahkan SUPABASE_SERVICE_ROLE_KEY di file .env.local.';
+        'Akses ditolak oleh database (Row-Level Security: Khusus Admin / Authenticated). Pastikan Anda telah login dengan akun admin Supabase atau tambahkan SUPABASE_SERVICE_ROLE_KEY di .env.local.';
     } else if (error.code === '23502') {
       userFriendlyError = `Gagal menyimpan: Kolom wajib di database belum terpenuhi (${error.message}).`;
     } else if (error.code === '23505') {
@@ -211,7 +211,7 @@ export async function tambahProyekAction(formData: FormData) {
   revalidatePath('/project');
   revalidatePath('/');
 
-  return { success: true, data };
+  return { success: true, data: data && data.length > 0 ? data : [fullPayload] };
 }
 
 export async function editProyekAction(formData: FormData) {
@@ -323,7 +323,7 @@ export async function editProyekAction(formData: FormData) {
 
     if (error.code === '42501') {
       userFriendlyError =
-        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin.';
+        'Akses ditolak oleh database (Row-Level Security: Khusus Admin / Authenticated). Pastikan Anda telah login dengan akun admin Supabase atau tambahkan SUPABASE_SERVICE_ROLE_KEY di .env.local.';
     }
 
     return { success: false, error: userFriendlyError };
@@ -335,7 +335,7 @@ export async function editProyekAction(formData: FormData) {
   revalidatePath('/project');
   revalidatePath('/');
 
-  return { success: true, data };
+  return { success: true, data: data && data.length > 0 ? data : [fullUpdatePayload] };
 }
 
 export async function hapusProyekAction(formData: FormData) {
@@ -353,7 +353,7 @@ export async function hapusProyekAction(formData: FormData) {
 
     if (error.code === '42501') {
       userFriendlyError =
-        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin.';
+        'Akses ditolak oleh database (Row-Level Security: Khusus Admin / Authenticated). Pastikan Anda telah login dengan akun admin Supabase atau tambahkan SUPABASE_SERVICE_ROLE_KEY di .env.local.';
     }
 
     return { success: false, error: userFriendlyError };
