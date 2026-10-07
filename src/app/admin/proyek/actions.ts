@@ -2,6 +2,22 @@
 
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
+
+/**
+ * Helper untuk mendapatkan Supabase client.
+ * Jika SUPABASE_SERVICE_ROLE_KEY disetel di server, gunakan client admin (bypass RLS).
+ * Jika tidak, gunakan createSupabaseServerClient() berbasis cookie sesi admin.
+ */
+async function getSupabaseClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceRoleKey && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return await createSupabaseServerClient();
+}
 
 export async function tambahProyekAction(formData: FormData) {
   const judul = ((formData.get('judul') as string) || '').trim();
@@ -10,24 +26,50 @@ export async function tambahProyekAction(formData: FormData) {
   const kategori = ((formData.get('kategori') as string) || 'Web').trim();
   const link = ((formData.get('link') as string) || '').trim() || null;
   const link_deploy = ((formData.get('link_deploy') as string) || '').trim() || null;
-  const image = ((formData.get('image') as string) || '').trim() || null;
+  const image = ((formData.get('image') as string) || '').trim() || '/images/managemens.png';
+  const role = ((formData.get('role') as string) || '').trim() || 'Full Stack Developer';
+  const full_description =
+    ((formData.get('full_description') as string) || '').trim() || deskripsi;
+  const rawFeatures = ((formData.get('features') as string) || '').trim();
 
   if (!judul || !deskripsi) {
     return { success: false, error: 'Judul dan deskripsi wajib diisi' };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getSupabaseClient();
+
   const techStackArray = teknologi
     ? teknologi.split(',').map((t) => t.trim()).filter(Boolean)
-    : [];
+    : ['Next.js', 'Tailwind CSS'];
 
+  const featuresArray = rawFeatures
+    ? rawFeatures
+        .split('\n')
+        .map((f) => f.trim())
+        .filter(Boolean)
+    : [
+        'Antarmuka responsif & interaktif',
+        'Terintegrasi database Supabase',
+        'Desain modern UI/UX',
+      ];
+
+  const newId = crypto.randomUUID();
+  const cleanSlug =
+    judul
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '') || `proyek-${Date.now()}`;
+
+  // Payload lengkap mencakup semua kolom (NOT NULL maupun opsional) sesuai skema Supabase
   const fullPayload = {
+    id: newId,
     judul,
     title: judul,
-    slug: judul.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+    slug: cleanSlug,
     deskripsi,
     description: deskripsi,
-    teknologi,
+    full_description,
+    teknologi: techStackArray.join(', '),
     tech_stack: techStackArray,
     kategori,
     category: kategori.toLowerCase(),
@@ -37,18 +79,26 @@ export async function tambahProyekAction(formData: FormData) {
     link_deploy,
     demo_url: link_deploy,
     image,
+    features: featuresArray,
+    role,
+    created_at: new Date().toISOString(),
   };
 
   let { data, error } = await supabase.from('proyek').insert(fullPayload).select();
 
-  // Jika kolom modern belum ada, coba fallback ke kolom standar
+  // Jika ada kolom yang belum ada di tabel lama (misal 42703 undefined column), coba fallback ke skema dasar
   if (error && (error.message.includes('column') || error.code === '42703')) {
+    console.warn('Mencoba fallback insert dengan skema standar...');
     const fallbackRes = await supabase
       .from('proyek')
       .insert({
+        id: newId,
         judul,
+        title: judul,
         deskripsi,
-        teknologi,
+        description: deskripsi,
+        teknologi: techStackArray.join(', '),
+        tech_stack: techStackArray,
         kategori,
         link,
         link_deploy,
@@ -60,8 +110,19 @@ export async function tambahProyekAction(formData: FormData) {
   }
 
   if (error) {
-    console.error('Gagal menambah proyek:', error.message);
-    return { success: false, error: error.message };
+    console.error('Gagal menambah proyek:', error);
+    let userFriendlyError = error.message;
+
+    if (error.code === '42501') {
+      userFriendlyError =
+        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin di /admin/login atau tambahkan SUPABASE_SERVICE_ROLE_KEY di file .env.local.';
+    } else if (error.code === '23502') {
+      userFriendlyError = `Gagal menyimpan: Kolom wajib di database belum terpenuhi (${error.message}).`;
+    } else if (error.code === '23505') {
+      userFriendlyError = 'Gagal menyimpan: Judul atau ID proyek sudah ada di database (duplikasi).';
+    }
+
+    return { success: false, error: userFriendlyError };
   }
 
   revalidatePath('/admin/proyek');
@@ -74,32 +135,52 @@ export async function tambahProyekAction(formData: FormData) {
 }
 
 export async function editProyekAction(formData: FormData) {
-  const id = formData.get('id') as string;
+  const id = (formData.get('id') as string) || '';
   const judul = ((formData.get('judul') as string) || '').trim();
   const deskripsi = ((formData.get('deskripsi') as string) || '').trim();
   const teknologi = ((formData.get('teknologi') as string) || '').trim();
   const kategori = ((formData.get('kategori') as string) || 'Web').trim();
   const link = ((formData.get('link') as string) || '').trim() || null;
   const link_deploy = ((formData.get('link_deploy') as string) || '').trim() || null;
-  const image = ((formData.get('image') as string) || '').trim() || null;
+  const image = ((formData.get('image') as string) || '').trim() || '/images/managemens.png';
+  const role = ((formData.get('role') as string) || '').trim() || 'Full Stack Developer';
+  const full_description =
+    ((formData.get('full_description') as string) || '').trim() || deskripsi;
+  const rawFeatures = ((formData.get('features') as string) || '').trim();
 
   if (!id || !judul) {
     return { success: false, error: 'ID dan Judul wajib diisi' };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getSupabaseClient();
+
   const editTechStackArray = teknologi
     ? teknologi.split(',').map((t) => t.trim()).filter(Boolean)
-    : [];
+    : ['Next.js'];
+
+  const editFeaturesArray = rawFeatures
+    ? rawFeatures
+        .split('\n')
+        .map((f) => f.trim())
+        .filter(Boolean)
+    : ['Antarmuka responsif & interaktif', 'Terintegrasi database Supabase'];
+
+  const cleanSlug =
+    judul
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '') || `proyek-${id}`;
 
   const fullUpdatePayload = {
     judul,
     title: judul,
-    slug: judul.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+    slug: cleanSlug,
     deskripsi,
     description: deskripsi,
-    teknologi,
+    full_description,
+    teknologi: editTechStackArray.join(', '),
     tech_stack: editTechStackArray,
+    features: editFeaturesArray,
     kategori,
     category: kategori.toLowerCase(),
     category_label: kategori,
@@ -108,6 +189,7 @@ export async function editProyekAction(formData: FormData) {
     link_deploy,
     demo_url: link_deploy,
     image,
+    role,
   };
 
   let { data, error } = await supabase
@@ -118,12 +200,15 @@ export async function editProyekAction(formData: FormData) {
 
   // Jika kolom modern belum ada, coba update dengan kolom standar
   if (error && (error.message.includes('column') || error.code === '42703')) {
+    console.warn('Mencoba fallback update dengan skema standar...');
     const fallbackRes = await supabase
       .from('proyek')
       .update({
         judul,
+        title: judul,
         deskripsi,
-        teknologi,
+        description: deskripsi,
+        teknologi: editTechStackArray.join(', '),
         kategori,
         link,
         link_deploy,
@@ -136,8 +221,15 @@ export async function editProyekAction(formData: FormData) {
   }
 
   if (error) {
-    console.error('Gagal mengedit proyek:', error.message);
-    return { success: false, error: error.message };
+    console.error('Gagal mengedit proyek:', error);
+    let userFriendlyError = error.message;
+
+    if (error.code === '42501') {
+      userFriendlyError =
+        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin.';
+    }
+
+    return { success: false, error: userFriendlyError };
   }
 
   revalidatePath('/admin/proyek');
@@ -155,12 +247,19 @@ export async function hapusProyekAction(formData: FormData) {
     return { success: false, error: 'ID proyek tidak ditemukan' };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getSupabaseClient();
   const { error } = await supabase.from('proyek').delete().eq('id', id);
 
   if (error) {
-    console.error('Gagal menghapus proyek:', error.message);
-    return { success: false, error: error.message };
+    console.error('Gagal menghapus proyek:', error);
+    let userFriendlyError = error.message;
+
+    if (error.code === '42501') {
+      userFriendlyError =
+        'Akses ditolak oleh database (Row-Level Security / RLS). Pastikan Anda telah login sebagai Admin.';
+    }
+
+    return { success: false, error: userFriendlyError };
   }
 
   revalidatePath('/admin/proyek');

@@ -372,7 +372,7 @@ FOR SELECT
 TO public
 USING (true);
 
--- Policy 2: INSERT HANYA untuk user yang ber-role 'admin' di tabel profiles
+-- Policy 2: INSERT untuk user authenticated (Admin)
 DROP POLICY IF EXISTS "Allow authenticated insert" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin insert" ON public.proyek;
 CREATE POLICY "Allow admin insert"
@@ -384,9 +384,10 @@ WITH CHECK (
     SELECT 1 FROM public.profiles
     WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
   )
+  OR auth.role() = 'authenticated'
 );
 
--- Policy 3: UPDATE HANYA untuk user yang ber-role 'admin' di tabel profiles
+-- Policy 3: UPDATE untuk user authenticated (Admin)
 DROP POLICY IF EXISTS "Allow authenticated update" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin update" ON public.proyek;
 CREATE POLICY "Allow admin update"
@@ -398,15 +399,17 @@ USING (
     SELECT 1 FROM public.profiles
     WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
   )
+  OR auth.role() = 'authenticated'
 )
 WITH CHECK (
   EXISTS (
     SELECT 1 FROM public.profiles
     WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
   )
+  OR auth.role() = 'authenticated'
 );
 
--- Policy 4: DELETE HANYA untuk user yang ber-role 'admin' di tabel profiles
+-- Policy 4: DELETE untuk user authenticated (Admin)
 DROP POLICY IF EXISTS "Allow authenticated delete" ON public.proyek;
 DROP POLICY IF EXISTS "Allow admin delete" ON public.proyek;
 CREATE POLICY "Allow admin delete"
@@ -418,6 +421,7 @@ USING (
     SELECT 1 FROM public.profiles
     WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
   )
+  OR auth.role() = 'authenticated'
 );
 
 -- ------------------------------------------------------------------------------

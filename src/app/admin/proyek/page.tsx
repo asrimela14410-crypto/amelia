@@ -26,6 +26,9 @@ export default async function AdminProyekPage() {
     link: item.link || item.github_url || null,
     link_deploy: item.link_deploy || item.demo_url || null,
     image: item.image || '/images/managemens.png',
+    full_description: item.full_description || item.description || item.deskripsi || '',
+    features: item.features || [],
+    role: item.role || 'Full Stack Developer',
   }));
 
   return (

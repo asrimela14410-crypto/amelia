@@ -28,6 +28,13 @@ import {
   hapusProyekAction,
 } from './actions';
 
+export const PRESET_IMAGES = [
+  { label: 'Management Siswa', path: '/images/managemens.png' },
+  { label: 'Management Magang', path: '/images/managementm.png' },
+  { label: 'My App', path: '/images/My app.png' },
+  { label: 'Pinjam Akun', path: '/images/pinjam.png' },
+];
+
 export type DbProyekItem = {
   id: number | string;
   judul: string;
@@ -38,6 +45,8 @@ export type DbProyekItem = {
   kategori?: string | null;
   image?: string | null;
   role?: string | null;
+  full_description?: string | null;
+  features?: string[] | string | null;
   created_at?: string;
 };
 
@@ -58,6 +67,15 @@ export default function AdminStudioClient({
   const [editingProyek, setEditingProyek] = useState<DbProyekItem | null>(null);
   const [deletingProyek, setDeletingProyek] = useState<DbProyekItem | null>(null);
 
+  // Selected image states
+  const [addImagePath, setAddImagePath] = useState('/images/managemens.png');
+  const [editImagePath, setEditImagePath] = useState('/images/managemens.png');
+
+  const openEditModal = (item: DbProyekItem) => {
+    setEditingProyek(item);
+    setEditImagePath(item.image || '/images/managemens.png');
+  };
+
   const [isPending, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<{
     text: string;
@@ -77,7 +95,25 @@ export default function AdminStudioClient({
     startTransition(async () => {
       const res = await tambahProyekAction(formData);
       if (res.success && res.data && res.data[0]) {
-        setProyekList((prev) => [...prev, res.data![0]]);
+        const raw = res.data[0];
+        const itemBaru: DbProyekItem = {
+          ...raw,
+          id: String(raw.id),
+          judul: raw.judul || raw.title || 'Untitled',
+          deskripsi: raw.deskripsi || raw.description || '',
+          teknologi:
+            raw.teknologi ||
+            (Array.isArray(raw.tech_stack) ? raw.tech_stack.join(', ') : raw.tech_stack) ||
+            '',
+          kategori: raw.kategori || raw.category_label || raw.category || 'Web',
+          link: raw.link || raw.github_url || null,
+          link_deploy: raw.link_deploy || raw.demo_url || null,
+          image: raw.image || addImagePath || '/images/managemens.png',
+          full_description: raw.full_description || raw.deskripsi || '',
+          features: raw.features || [],
+          role: raw.role || 'Full Stack Developer',
+        };
+        setProyekList((prev) => [...prev, itemBaru]);
         setIsAddOpen(false);
         showToast('Proyek baru berhasil ditambahkan ke Supabase!');
       } else {
@@ -94,7 +130,24 @@ export default function AdminStudioClient({
     startTransition(async () => {
       const res = await editProyekAction(formData);
       if (res.success && res.data && res.data[0]) {
-        const updated = res.data[0];
+        const raw = res.data[0];
+        const updated: DbProyekItem = {
+          ...raw,
+          id: String(raw.id),
+          judul: raw.judul || raw.title || 'Untitled',
+          deskripsi: raw.deskripsi || raw.description || '',
+          teknologi:
+            raw.teknologi ||
+            (Array.isArray(raw.tech_stack) ? raw.tech_stack.join(', ') : raw.tech_stack) ||
+            '',
+          kategori: raw.kategori || raw.category_label || raw.category || 'Web',
+          link: raw.link || raw.github_url || null,
+          link_deploy: raw.link_deploy || raw.demo_url || null,
+          image: raw.image || editImagePath || '/images/managemens.png',
+          full_description: raw.full_description || raw.deskripsi || '',
+          features: raw.features || [],
+          role: raw.role || 'Full Stack Developer',
+        };
         setProyekList((prev) =>
           prev.map((item) => (String(item.id) === String(updated.id) ? updated : item))
         );
@@ -271,7 +324,7 @@ export default function AdminStudioClient({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setEditingProyek(featured)}
+                      onClick={() => openEditModal(featured)}
                       className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -444,7 +497,7 @@ export default function AdminStudioClient({
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditingProyek(proyek)}
+                          onClick={() => openEditModal(proyek)}
                           className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
                         >
                           Edit
@@ -548,7 +601,7 @@ export default function AdminStudioClient({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => setEditingProyek(proyek)}
+                            onClick={() => openEditModal(proyek)}
                             className="text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer"
                           >
                             Edit
@@ -583,8 +636,8 @@ export default function AdminStudioClient({
       {/* ========================================================================= */}
       {isAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
                   <Plus className="w-5 h-5" />
@@ -593,7 +646,7 @@ export default function AdminStudioClient({
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                     Tambah Proyek Baru
                   </h3>
-                  <p className="text-xs text-slate-500">Mutasi langsung ke tabel Supabase</p>
+                  <p className="text-xs text-slate-500">Mutasi langsung ke tabel Supabase (semua kolom tersinkron)</p>
                 </div>
               </div>
               <button
@@ -638,24 +691,56 @@ export default function AdminStudioClient({
 
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                    Teknologi
+                    Teknologi (pisah koma)
                   </label>
                   <input
                     name="teknologi"
-                    placeholder="Next.js, Supabase, Tailwind"
+                    placeholder="Next.js, Supabase, Tailwind CSS"
                     className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
 
+              {/* Input Gambar Proyek */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Deskripsi Proyek *
+                  Gambar Proyek (URL atau Preset) *
+                </label>
+                <input
+                  name="image"
+                  value={addImagePath}
+                  onChange={(e) => setAddImagePath(e.target.value)}
+                  required
+                  placeholder="/images/managemens.png"
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
+                />
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
+                  {PRESET_IMAGES.map((preset) => (
+                    <button
+                      key={preset.path}
+                      type="button"
+                      onClick={() => setAddImagePath(preset.path)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        addImagePath === preset.path
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Deskripsi Ringkas *
                 </label>
                 <textarea
                   name="deskripsi"
                   required
-                  rows={3}
+                  rows={2}
                   placeholder="Jelaskan fitur utama dan tujuan proyek ini dibangun..."
                   className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -663,17 +748,67 @@ export default function AdminStudioClient({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Link Proyek / GitHub (opsional)
+                  Deskripsi Lengkap / Detail (opsional)
                 </label>
-                <input
-                  name="link"
-                  type="url"
-                  placeholder="https://github.com/..."
+                <textarea
+                  name="full_description"
+                  rows={2}
+                  placeholder="Penjelasan mendalam tentang arsitektur, tantangan teknis, dll..."
                   className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Fitur-Fitur Utama (1 baris per fitur, opsional)
+                </label>
+                <textarea
+                  name="features"
+                  rows={2}
+                  placeholder="Role-based authentication & permissions&#10;Kalkulasi penilaian otomatis&#10;Pencatatan presensi siswa real-time"
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Link Repository / GitHub (opsional)
+                  </label>
+                  <input
+                    name="link"
+                    type="url"
+                    placeholder="https://github.com/..."
+                    className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Link Demo / Live Deploy (opsional)
+                  </label>
+                  <input
+                    name="link_deploy"
+                    type="url"
+                    placeholder="https://..."
+                    className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Peran Pengembang (Role)
+                </label>
+                <input
+                  name="role"
+                  defaultValue="Full Stack Developer"
+                  placeholder="Contoh: Frontend Engineer, Full Stack Developer"
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 sticky bottom-0 bg-white dark:bg-slate-900 pb-1">
                 <button
                   type="submit"
                   disabled={isPending}
@@ -699,8 +834,8 @@ export default function AdminStudioClient({
       {/* ========================================================================= */}
       {editingProyek && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
                   <Pencil className="w-5 h-5" />
@@ -756,7 +891,7 @@ export default function AdminStudioClient({
 
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                    Teknologi
+                    Teknologi (pisah koma)
                   </label>
                   <input
                     name="teknologi"
@@ -766,32 +901,116 @@ export default function AdminStudioClient({
                 </div>
               </div>
 
+              {/* Edit Gambar Proyek */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Deskripsi Proyek *
+                  Gambar Proyek (URL atau Preset) *
+                </label>
+                <input
+                  name="image"
+                  value={editImagePath}
+                  onChange={(e) => setEditImagePath(e.target.value)}
+                  required
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                />
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
+                  {PRESET_IMAGES.map((preset) => (
+                    <button
+                      key={preset.path}
+                      type="button"
+                      onClick={() => setEditImagePath(preset.path)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        editImagePath === preset.path
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Deskripsi Ringkas *
                 </label>
                 <textarea
                   name="deskripsi"
                   defaultValue={editingProyek.deskripsi}
                   required
-                  rows={3}
+                  rows={2}
                   className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Link Proyek / GitHub (opsional)
+                  Deskripsi Lengkap / Detail (opsional)
                 </label>
-                <input
-                  name="link"
-                  type="url"
-                  defaultValue={editingProyek.link || ''}
+                <textarea
+                  name="full_description"
+                  defaultValue={editingProyek.full_description || editingProyek.deskripsi || ''}
+                  rows={2}
                   className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Fitur-Fitur Utama (1 baris per fitur, opsional)
+                </label>
+                <textarea
+                  name="features"
+                  defaultValue={
+                    Array.isArray(editingProyek.features)
+                      ? editingProyek.features.join('\n')
+                      : (editingProyek.features || '')
+                  }
+                  rows={2}
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Link Repository / GitHub (opsional)
+                  </label>
+                  <input
+                    name="link"
+                    type="url"
+                    defaultValue={editingProyek.link || ''}
+                    className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Link Demo / Live Deploy (opsional)
+                  </label>
+                  <input
+                    name="link_deploy"
+                    type="url"
+                    defaultValue={editingProyek.link_deploy || ''}
+                    className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Peran Pengembang (Role)
+                </label>
+                <input
+                  name="role"
+                  defaultValue={editingProyek.role || 'Full Stack Developer'}
+                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 sticky bottom-0 bg-white dark:bg-slate-900 pb-1">
                 <button
                   type="submit"
                   disabled={isPending}

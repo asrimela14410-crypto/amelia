@@ -14,6 +14,10 @@ async function editProyekAction(formData: FormData) {
 
   const supabase = await createSupabaseServerClient();
 
+  const techStackArray = teknologi
+    ? teknologi.split(',').map((t) => t.trim()).filter(Boolean)
+    : [];
+
   const { error } = await supabase
     .from('proyek')
     .update({
@@ -22,7 +26,7 @@ async function editProyekAction(formData: FormData) {
       deskripsi,
       description: deskripsi,
       teknologi,
-      tech_stack: teknologi,
+      tech_stack: techStackArray,
       link,
       github_url: link,
     })
