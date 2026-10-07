@@ -19,6 +19,44 @@ async function getSupabaseClient() {
   return await createSupabaseServerClient();
 }
 
+/**
+ * Helper untuk mengunggah file gambar ke Supabase Storage (bucket 'proyek-images')
+ */
+async function uploadImageToSupabase(file: File, supabase: any): Promise<string | null> {
+  if (!file || file.size === 0 || !file.name) {
+    return null;
+  }
+
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const cleanFileName = `proyek-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+    const filePath = cleanFileName;
+
+    const { data, error } = await supabase.storage
+      .from('proyek-images')
+      .upload(filePath, buffer, {
+        contentType: file.type || 'image/png',
+        upsert: true,
+      });
+
+    if (error) {
+      console.warn('Supabase storage upload notice (pastikan bucket proyek-images sudah dibuat):', error.message);
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('proyek-images')
+      .getPublicUrl(filePath);
+
+    return publicUrlData?.publicUrl || null;
+  } catch (err) {
+    console.error('Gagal upload gambar ke Supabase storage:', err);
+    return null;
+  }
+}
+
 export async function tambahProyekAction(formData: FormData) {
   const judul = ((formData.get('judul') as string) || '').trim();
   const deskripsi = ((formData.get('deskripsi') as string) || '').trim();
@@ -26,17 +64,32 @@ export async function tambahProyekAction(formData: FormData) {
   const kategori = ((formData.get('kategori') as string) || 'Web').trim();
   const link = ((formData.get('link') as string) || '').trim() || null;
   const link_deploy = ((formData.get('link_deploy') as string) || '').trim() || null;
-  const image = ((formData.get('image') as string) || '').trim() || '/images/managemens.png';
   const role = ((formData.get('role') as string) || '').trim() || 'Full Stack Developer';
   const full_description =
     ((formData.get('full_description') as string) || '').trim() || deskripsi;
   const rawFeatures = ((formData.get('features') as string) || '').trim();
+
+  let image = ((formData.get('image') as string) || '').trim();
+  const imageFile = formData.get('image_file') as File | null;
 
   if (!judul || !deskripsi) {
     return { success: false, error: 'Judul dan deskripsi wajib diisi' };
   }
 
   const supabase = await getSupabaseClient();
+
+  // Proses upload file jika pengguna memilih file dari komputer
+  if (imageFile && imageFile.size > 0 && imageFile.name) {
+    const uploadedUrl = await uploadImageToSupabase(imageFile, supabase);
+    if (uploadedUrl) {
+      image = uploadedUrl;
+    }
+  }
+
+  // Jika tetap kosong, gunakan gambar default
+  if (!image) {
+    image = '/images/managemens.png';
+  }
 
   const techStackArray = teknologi
     ? teknologi.split(',').map((t) => t.trim()).filter(Boolean)
@@ -142,17 +195,31 @@ export async function editProyekAction(formData: FormData) {
   const kategori = ((formData.get('kategori') as string) || 'Web').trim();
   const link = ((formData.get('link') as string) || '').trim() || null;
   const link_deploy = ((formData.get('link_deploy') as string) || '').trim() || null;
-  const image = ((formData.get('image') as string) || '').trim() || '/images/managemens.png';
   const role = ((formData.get('role') as string) || '').trim() || 'Full Stack Developer';
   const full_description =
     ((formData.get('full_description') as string) || '').trim() || deskripsi;
   const rawFeatures = ((formData.get('features') as string) || '').trim();
+
+  let image = ((formData.get('image') as string) || '').trim();
+  const imageFile = formData.get('image_file') as File | null;
 
   if (!id || !judul) {
     return { success: false, error: 'ID dan Judul wajib diisi' };
   }
 
   const supabase = await getSupabaseClient();
+
+  // Proses upload file baru jika pengguna memilih file
+  if (imageFile && imageFile.size > 0 && imageFile.name) {
+    const uploadedUrl = await uploadImageToSupabase(imageFile, supabase);
+    if (uploadedUrl) {
+      image = uploadedUrl;
+    }
+  }
+
+  if (!image) {
+    image = '/images/managemens.png';
+  }
 
   const editTechStackArray = teknologi
     ? teknologi.split(',').map((t) => t.trim()).filter(Boolean)

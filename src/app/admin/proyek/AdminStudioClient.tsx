@@ -17,6 +17,8 @@ import {
   FolderGit2,
   ShieldCheck,
   LayoutGrid,
+  Upload,
+  ImageIcon,
 } from 'lucide-react';
 import HeroSection from '@/components/HeroSection';
 import AboutSection from '@/components/AboutSection';
@@ -70,10 +72,22 @@ export default function AdminStudioClient({
   // Selected image states
   const [addImagePath, setAddImagePath] = useState('/images/managemens.png');
   const [editImagePath, setEditImagePath] = useState('/images/managemens.png');
+  const [addFilePreview, setAddFilePreview] = useState<string | null>(null);
+  const [editFilePreview, setEditFilePreview] = useState<string | null>(null);
+  const [addImageTab, setAddImageTab] = useState<'upload' | 'preset'>('upload');
+  const [editImageTab, setEditImageTab] = useState<'upload' | 'preset'>('upload');
+
+  const openAddModal = () => {
+    setIsAddOpen(true);
+    setAddFilePreview(null);
+    setAddImageTab('upload');
+  };
 
   const openEditModal = (item: DbProyekItem) => {
     setEditingProyek(item);
     setEditImagePath(item.image || '/images/managemens.png');
+    setEditFilePreview(null);
+    setEditImageTab('upload');
   };
 
   const [isPending, startTransition] = useTransition();
@@ -252,7 +266,7 @@ export default function AdminStudioClient({
             {/* Tombol Tambah Proyek Cepat */}
             <button
               type="button"
-              onClick={() => setIsAddOpen(true)}
+              onClick={openAddModal}
               className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer hover:scale-105"
             >
               <Plus className="w-4 h-4" />
@@ -299,7 +313,7 @@ export default function AdminStudioClient({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsAddOpen(true)}
+                    onClick={openAddModal}
                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
@@ -518,7 +532,7 @@ export default function AdminStudioClient({
                 {/* Card Tambah Proyek Tambahan */}
                 <button
                   type="button"
-                  onClick={() => setIsAddOpen(true)}
+                  onClick={openAddModal}
                   className="rounded-3xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 p-8 flex flex-col items-center justify-center gap-3 text-center hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all cursor-pointer group min-h-[320px]"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
@@ -556,7 +570,7 @@ export default function AdminStudioClient({
             </div>
             <button
               type="button"
-              onClick={() => setIsAddOpen(true)}
+              onClick={openAddModal}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
@@ -701,36 +715,117 @@ export default function AdminStudioClient({
                 </div>
               </div>
 
-              {/* Input Gambar Proyek */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Gambar Proyek (URL atau Preset) *
-                </label>
-                <input
-                  name="image"
-                  value={addImagePath}
-                  onChange={(e) => setAddImagePath(e.target.value)}
-                  required
-                  placeholder="/images/managemens.png"
-                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
-                />
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
-                  {PRESET_IMAGES.map((preset) => (
+              {/* Foto / Banner Proyek (Upload File atau Preset) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Foto / Banner Proyek *
+                  </label>
+                  <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
                     <button
-                      key={preset.path}
                       type="button"
-                      onClick={() => setAddImagePath(preset.path)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                        addImagePath === preset.path
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      onClick={() => setAddImageTab('upload')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        addImageTab === 'upload'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {preset.label}
+                      Upload File
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setAddImageTab('preset')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        addImageTab === 'preset'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Preset / URL
+                    </button>
+                  </div>
                 </div>
+
+                {addImageTab === 'upload' ? (
+                  <div className="space-y-3">
+                    <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 hover:bg-emerald-50/20 transition-all text-center group">
+                      <input
+                        type="file"
+                        name="image_file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setAddFilePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {addFilePreview ? 'Ganti file foto yang dipilih...' : 'Pilih file foto dari komputer'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Maksimal 5 MB (PNG, JPG, WebP). Otomatis tersimpan ke Supabase Storage.
+                        </p>
+                      </div>
+                    </label>
+
+                    {addFilePreview && (
+                      <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-950">
+                        <img
+                          src={addFilePreview}
+                          alt="Preview upload"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                          Siap Diunggah
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAddFilePreview(null)}
+                          className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/90 text-white text-[11px] px-2.5 py-1 rounded-lg backdrop-blur-xs transition-colors cursor-pointer"
+                        >
+                          Hapus Pilihan
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Hidden input fallback jika user tidak memilih file */}
+                    <input type="hidden" name="image" value={addImagePath} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      name="image"
+                      value={addImagePath}
+                      onChange={(e) => setAddImagePath(e.target.value)}
+                      placeholder="/images/managemens.png atau https://..."
+                      className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
+                      {PRESET_IMAGES.map((preset) => (
+                        <button
+                          key={preset.path}
+                          type="button"
+                          onClick={() => setAddImagePath(preset.path)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            addImagePath === preset.path
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -901,35 +996,119 @@ export default function AdminStudioClient({
                 </div>
               </div>
 
-              {/* Edit Gambar Proyek */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                  Gambar Proyek (URL atau Preset) *
-                </label>
-                <input
-                  name="image"
-                  value={editImagePath}
-                  onChange={(e) => setEditImagePath(e.target.value)}
-                  required
-                  className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-                />
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
-                  {PRESET_IMAGES.map((preset) => (
+              {/* Edit Gambar Proyek (Upload File Baru atau Preset) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Foto / Banner Proyek *
+                  </label>
+                  <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
                     <button
-                      key={preset.path}
                       type="button"
-                      onClick={() => setEditImagePath(preset.path)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                        editImagePath === preset.path
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      onClick={() => setEditImageTab('upload')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        editImageTab === 'upload'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {preset.label}
+                      Upload File Baru
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setEditImageTab('preset')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        editImageTab === 'preset'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Preset / URL
+                    </button>
+                  </div>
                 </div>
+
+                {editImageTab === 'upload' ? (
+                  <div className="space-y-3">
+                    <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 hover:bg-blue-50/20 transition-all text-center group">
+                      <input
+                        type="file"
+                        name="image_file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setEditFilePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {editFilePreview ? 'Ganti file foto yang dipilih...' : 'Unggah foto baru dari komputer'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Pilih gambar untuk mengganti foto saat ini. Otomatis disimpan ke Supabase Storage.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Preview Gambar: Tampilkan file baru jika dipilih, atau foto saat ini */}
+                    <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-950">
+                      <img
+                        src={editFilePreview || editImagePath || '/images/managemens.png'}
+                        alt="Preview foto proyek"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className={`absolute top-2 right-2 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs ${
+                        editFilePreview ? 'bg-blue-600' : 'bg-black/60 backdrop-blur-xs'
+                      }`}>
+                        {editFilePreview ? 'File Baru Siap Diunggah' : 'Foto Saat Ini'}
+                      </div>
+                      {editFilePreview && (
+                        <button
+                          type="button"
+                          onClick={() => setEditFilePreview(null)}
+                          className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/90 text-white text-[11px] px-2.5 py-1 rounded-lg backdrop-blur-xs transition-colors cursor-pointer"
+                        >
+                          Batalkan File Baru
+                        </button>
+                      )}
+                    </div>
+
+                    <input type="hidden" name="image" value={editImagePath} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      name="image"
+                      value={editImagePath}
+                      onChange={(e) => setEditImagePath(e.target.value)}
+                      placeholder="/images/managemens.png atau https://..."
+                      className="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[11px] text-slate-400 self-center mr-1">Preset:</span>
+                      {PRESET_IMAGES.map((preset) => (
+                        <button
+                          key={preset.path}
+                          type="button"
+                          onClick={() => setEditImagePath(preset.path)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            editImagePath === preset.path
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
