@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import BackgroundVideo from "@/components/BackgroundVideo";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -121,6 +122,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${cormorant.variable} ${manrope.variable}`}>
+        <BackgroundVideo />
         {children}
         <script
           type="application/ld+json"

@@ -7,6 +7,8 @@ import {
   getDoorpassSecret,
   verifyDoorpassSessionToken,
   computeDoorpassHash,
+  verifyAdminAuthToken,
+  ADMIN_AUTH_COOKIE,
 } from './lib/doorpass/core';
 
 export async function middleware(request: NextRequest) {
